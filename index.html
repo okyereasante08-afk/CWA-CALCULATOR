@@ -511,8 +511,52 @@ body.mobile-mode .app-hdr{padding:1rem 1.25rem}
 
 /* ── UTILS ── */
 .copyright-line{margin-top:.75rem;font-size:9px;color:var(--ink-4);letter-spacing:.12em;text-transform:uppercase}
+@keyframes sem2BtnGlow{
+  0%,100%{box-shadow:0 0 8px rgba(0,212,255,0.2),0 0 20px rgba(0,212,255,0.05)}
+  50%{box-shadow:0 0 18px rgba(0,212,255,0.45),0 0 40px rgba(0,212,255,0.12)}
+}
+#sem2-float-btn{animation:sem2BtnGlow 2.5s ease-in-out infinite}
 .fade-in{animation:fi .45s ease forwards}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── GUIDE BACK BUTTON ── */
+.ob-back{background:none;border:1px solid rgba(184,147,42,.25);
+  color:rgba(240,237,228,.35);font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;padding:13px 16px;cursor:pointer;
+  transition:all .25s;flex-shrink:0}
+.ob-back:hover{border-color:rgba(184,147,42,.5);color:rgba(240,237,228,.7)}
+.ob-back.hidden{opacity:0;pointer-events:none}
+
+/* ── GUIDE DROPDOWN ── */
+.guide-dd{position:relative}
+.guide-dd-trigger{position:relative}
+.guide-dd-panel{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--surface);border:1px solid var(--border);
+  box-shadow:var(--sh-lg);min-width:210px;z-index:200;
+  opacity:0;pointer-events:none;
+  transform:translateY(-6px);
+  transition:opacity .2s ease,transform .2s ease}
+.guide-dd-panel.open{opacity:1;pointer-events:all;transform:translateY(0)}
+.guide-dd-item{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:none;border:none;padding:12px 16px;
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);cursor:pointer;
+  transition:background .15s,color .15s;text-decoration:none;gap:12px}
+.guide-dd-item:hover{background:var(--surface-2);color:var(--ink)}
+.guide-dd-item.active{color:var(--gold-l)}
+.guide-dd-item.guide-dd-sem{color:rgba(0,212,255,.7)}
+.guide-dd-item.guide-dd-sem:hover{color:#00d4ff;background:rgba(0,212,255,.05)}
+.guide-dd-div{height:1px;background:var(--border)}
+.guide-dd-hint{font-size:9px;color:var(--ink-4);letter-spacing:.04em;
+  text-transform:none;font-weight:300;white-space:nowrap;flex-shrink:0}
+.guide-dd-badge{font-size:9px;padding:2px 8px;
+  background:var(--border);color:var(--ink-4);
+  letter-spacing:.06em;flex-shrink:0;transition:all .2s}
+.guide-dd-badge.active{
+  background:rgba(184,147,42,.15);color:var(--gold-l);
+  border:1px solid rgba(184,147,42,.3)}
 </style>
 </head>
 <body class="mobile-mode">
@@ -538,6 +582,7 @@ body.mobile-mode .app-hdr{padding:1rem 1.25rem}
       <h2 class="ob-title" id="ob-title"></h2>
       <p class="ob-body" id="ob-body"></p>
       <div class="ob-actions">
+        <button class="ob-back" id="ob-back-btn" onclick="obBack()">← Back</button>
         <button class="ob-next" id="ob-next-btn" onclick="obNext()"><span id="ob-next-label">Next →</span></button>
         <button class="ob-skip" onclick="obSkip()">Skip</button>
       </div>
@@ -571,9 +616,31 @@ body.mobile-mode .app-hdr{padding:1rem 1.25rem}
     </div>
     <div class="hdr-actions">
       <a class="hdr-brand" href="https://github.com/okyereasante08-afk" target="_blank" rel="noopener noreferrer">Asante Inc.</a>
-      <button class="hdr-btn" id="gpa-btn" onclick="toggleGPA()">GPA Scale</button>
-      <button class="hdr-btn" onclick="saveConfig()">Save</button>
-      <button class="hdr-btn" onclick="startOnboard()">Guide</button>
+      <!-- Guide dropdown -->
+      <div class="guide-dd" id="guide-dd">
+        <button class="hdr-btn guide-dd-trigger" onclick="toggleGuideDd()" id="guide-dd-trigger">Guide &#9662;</button>
+        <div class="guide-dd-panel" id="guide-dd-panel">
+          <button class="guide-dd-item" onclick="startOnboard();closeGuideDd()">
+            <span>Open Guide</span>
+            <span class="guide-dd-hint">7 steps</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item guide-dd-toggle" id="gpa-dd-item" onclick="toggleGPA();updateGpaItem()">
+            <span>GPA Scale</span>
+            <span class="guide-dd-badge" id="gpa-dd-badge">Off</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item" onclick="saveConfig();closeGuideDd()">
+            <span>Save Setup</span>
+            <span class="guide-dd-hint">Saves courses</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item guide-dd-sem" onclick="openSem2Popup();closeGuideDd()">
+            <span>2nd Semester</span>
+            <span class="guide-dd-hint">Portal + feedback</span>
+          </button>
+        </div>
+      </div>
       <button class="hdr-btn" onclick="confirmLogout()">Logout</button>
     </div>
   </div>
@@ -796,6 +863,78 @@ body.mobile-mode .app-hdr{padding:1rem 1.25rem}
   </div>
 </div>
 
+<!-- 2ND SEM POPUP -->
+<div id="sem2-popup" style="display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="width:100%;max-width:440px;background:rgba(8,8,6,0.98);border:1px solid rgba(255,255,255,0.1);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,0.8);position:relative">
+    <!-- Cyan top bar -->
+    <div style="height:2px;background:linear-gradient(to right,rgba(0,212,255,0.2),#00d4ff,rgba(0,212,255,0.2))"></div>
+    <div style="padding:2.25rem">
+
+      <!-- Eyebrow -->
+      <p style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#00d4ff;margin-bottom:1.25rem">KNUST BME1 · Class of 2029</p>
+
+      <!-- Title -->
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(22px,5vw,30px);font-weight:300;color:#f0ede4;line-height:1.15;margin-bottom:.75rem">
+        Congratulations on completing your<br>
+        <em style="font-style:italic;color:#00d4ff">1st Semester</em>
+      </h2>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(240,237,228,0.4);line-height:1.9;letter-spacing:.03em;margin-bottom:1.5rem">
+        You made it through. Every lecture, every late night, every exam. That took real commitment.
+      </p>
+
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:1.5rem"></div>
+
+      <!-- What's next -->
+      <p style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:.875rem">What's next</p>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(240,237,228,0.4);line-height:1.9;letter-spacing:.03em;margin-bottom:1.25rem">
+        The BME1 Portal is already being prepared for Semester 2 — new timetable, updated survival kit, and everything you need.
+      </p>
+
+      <!-- Portal link -->
+      <a href="https://knust-bme1.vercel.app" target="_blank" rel="noopener noreferrer"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);text-decoration:none;margin-bottom:10px;transition:background .2s"
+        onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+        <div>
+          <p style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:#f0ede4;letter-spacing:.06em;margin-bottom:3px">KNUST BME1 Student Portal</p>
+          <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:.04em">Timetable · Attendance · AI assistant · Orion</p>
+        </div>
+        <span style="color:rgba(255,255,255,0.25);font-size:18px;margin-left:12px">→</span>
+      </a>
+
+      <!-- Feedback link -->
+      <a href="https://forms.gle/3u5F82nnwHDqCdRQA" target="_blank" rel="noopener noreferrer"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);text-decoration:none;margin-bottom:1.5rem;transition:background .2s"
+        onmouseover="this.style.background='rgba(0,212,255,0.1)'"
+        onmouseout="this.style.background='rgba(0,212,255,0.05)'">
+        <div>
+          <p style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:#00d4ff;letter-spacing:.06em;margin-bottom:3px">Share your feedback</p>
+          <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(0,212,255,0.5);letter-spacing:.04em">Help us make Semester 2 even better</p>
+        </div>
+        <span style="color:rgba(0,212,255,0.4);font-size:18px;margin-left:12px">→</span>
+      </a>
+
+      <!-- Dismiss button -->
+      <button onclick="closeSem2Popup()"
+        style="width:100%;padding:13px 0;background:#00d4ff;color:#060a14;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-bottom:8px"
+        onmouseover="this.style.background='rgba(0,212,255,0.8)'"
+        onmouseout="this.style.background='#00d4ff'">
+        Let's go — Semester 2
+      </button>
+      <button onclick="closeSem2Popup()"
+        style="width:100%;padding:8px 0;background:none;border:none;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:color .2s"
+        onmouseover="this.style.color='rgba(255,255,255,0.45)'"
+        onmouseout="this.style.color='rgba(255,255,255,0.2)'">
+        Dismiss
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- 2nd Semester accessible via Guide dropdown -->
+
 <script>
 // ── DATA ──────────────────────────────────────────────────────
 const BASE = [
@@ -839,11 +978,14 @@ function showOnboard(){document.getElementById('ob-ov').style.display='flex';ren
 function renderOb(instant){
   const s=OB[obStep];const total=OB.length;
   document.getElementById('ob-prog').style.width=((obStep+1)/total*100)+'%';
-  document.getElementById('ob-dots').innerHTML=OB.map((_,i)=>`<div class="ob-dot${i===obStep?' on':''}"></div>`).join('');
+  document.getElementById('ob-dots').innerHTML=OB.map((_,i)=>`<div class="ob-dot${i===obStep?' on':''}" onclick="obGoTo(${i})" style="cursor:pointer"></div>`).join('');
   document.getElementById('ob-step-label').textContent=`Step ${obStep+1} of ${total}`;
-  const c=document.getElementById('ob-content');
+  // Back button visibility
+  const backBtn=document.getElementById('ob-back-btn');
+  if(backBtn)backBtn.classList.toggle('hidden',obStep===0);
+  const cont=document.getElementById('ob-content');
   const delay=instant?0:180;
-  if(!instant){c.style.transition='none';c.style.opacity='0';c.style.transform='translateY(6px)';}
+  if(!instant){cont.style.transition='none';cont.style.opacity='0';cont.style.transform='translateY(6px)';}
   setTimeout(()=>{
     document.getElementById('ob-icon').textContent=s.icon;
     document.getElementById('ob-title').innerHTML=s.title;
@@ -852,17 +994,26 @@ function renderOb(instant){
     const wrap=document.getElementById('ob-icon-wrap');
     wrap.style.animation='none';void wrap.offsetWidth;
     wrap.style.animation='ob-icon-in .5s cubic-bezier(.34,1.56,.64,1)';
-    c.style.transition='opacity .35s ease,transform .35s ease';
-    c.style.opacity='1';c.style.transform='translateY(0)';
+    cont.style.transition='opacity .35s ease,transform .35s ease';
+    cont.style.opacity='1';cont.style.transform='translateY(0)';
   },delay);
 }
 function obNext(){
   if(obStep<OB.length-1){obStep++;renderOb(false);}else{obSkip();}
 }
+function obBack(){
+  if(obStep>0){obStep--;renderOb(false);}
+}
+function obGoTo(i){
+  if(i===obStep)return;
+  obStep=i;renderOb(false);
+}
 function obSkip(){
   const ov=document.getElementById('ob-ov');
   ov.style.transition='opacity .4s ease';ov.style.opacity='0';
-  setTimeout(()=>{ov.style.display='none';ov.style.opacity='1';ov.style.transition='';},400);
+  setTimeout(()=>{ov.style.display='none';ov.style.opacity='1';ov.style.transition='';
+    maybeShowSem2(); // show sem2 popup after guide is dismissed
+  },400);
 }
 function startOnboard(){obStep=0;showOnboard();}
 
@@ -913,7 +1064,7 @@ function enterApp(){
   document.getElementById('bottom-controls').style.display='flex';
   document.getElementById('theme-btn').style.display='';
   buildTable();buildKbGrid();
-  setTimeout(showOnboard,600); // Always show guide on login
+  setTimeout(showOnboard, 600); // Always show guide on login — sem2 popup triggers after guide closes
 }
 document.getElementById('name-input').addEventListener('keydown',function(e){
   if(e.key==='Enter')enterApp();
@@ -924,6 +1075,7 @@ function confirmLogout(){
     document.getElementById('app-screen').style.display='none';
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('bottom-controls').style.display='none';
+    sem2ShownThisSession = false;
     document.getElementById('theme-btn').style.display='none';
     document.getElementById('glow-tab').style.display='none';
     glowShown=false;
@@ -1148,8 +1300,8 @@ function calcTarget(){
 // ── GPA ───────────────────────────────────────────────────────
 function toggleGPA(){
   showGPA=!showGPA;
-  document.getElementById('gpa-btn').classList.toggle('on',showGPA);
   calculate();
+  updateGpaItem();
   showToast(showGPA?'Showing GPA (4.0 scale)':'Showing CWA (/100)');
 }
 
@@ -1290,6 +1442,58 @@ function tCalc(){
   document.getElementById('t-wt').textContent=res.ws.toFixed(1);
 }
 function resetTerminal(){active().forEach((_,i)=>{const el=document.getElementById('ti'+i);if(el)el.value='';});tCalc();}
+
+// ── SEM2 POPUP ─────────────────────────────────────────────────
+let sem2ShownThisSession = false;
+
+function openSem2Popup(){
+  const el = document.getElementById('sem2-popup');
+  el.style.display = 'flex';
+  // Fade in
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .35s ease';
+  setTimeout(() => el.style.opacity = '1', 10);
+}
+
+function closeSem2Popup(){
+  const el = document.getElementById('sem2-popup');
+  el.style.transition = 'opacity .3s ease';
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.display = 'none'; el.style.opacity = '1'; }, 320);
+}
+
+function maybeShowSem2(){
+  if (sem2ShownThisSession) return;
+  sem2ShownThisSession = true;
+  setTimeout(openSem2Popup, 1200); // slight delay after guide
+}
+
+
+// ── GUIDE DROPDOWN ───────────────────────────────────────────
+function toggleGuideDd(){
+  const p = document.getElementById('guide-dd-panel');
+  const isOpen = p.classList.contains('open');
+  if(isOpen){ closeGuideDd(); }
+  else {
+    p.classList.add('open');
+    setTimeout(() => document.addEventListener('click', closeGuideDdOutside), 0);
+  }
+}
+function closeGuideDd(){
+  const p = document.getElementById('guide-dd-panel');
+  if(p) p.classList.remove('open');
+  document.removeEventListener('click', closeGuideDdOutside);
+}
+function closeGuideDdOutside(e){
+  const dd = document.getElementById('guide-dd');
+  if(dd && !dd.contains(e.target)) closeGuideDd();
+}
+function updateGpaItem(){
+  const badge = document.getElementById('gpa-dd-badge');
+  const item  = document.getElementById('gpa-dd-item');
+  if(badge){ badge.textContent = showGPA ? 'On' : 'Off'; badge.classList.toggle('active', showGPA); }
+  if(item)  item.classList.toggle('active', showGPA);
+}
 
 // ── INIT ──────────────────────────────────────────────────────
 applyTheme();
