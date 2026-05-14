@@ -1,0 +1,20 @@
+{
+  "name": "CWA Calculator — Asante Inc.",
+  "short_name": "CWA Calc",
+  "description": "Calculate your KNUST Cumulative Weighted Average. Built for BME1 by Asante Inc.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0c0a",
+  "theme_color": "#0c0c0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "cwa-calc.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "utilities"],
+  "lang": "en"
+}

@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CWA Calculator — Asante Inc.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c0c0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CWA Calc">
+<link rel="apple-touch-icon" href="cwa-calc.png">
+<style>
+/* ── TOKENS ── */
+:root{
+  --gold:#b8932a;--gold-l:#d4aa4a;--gold-glow:rgba(184,147,42,0.1);
+  --bg:#f8f6f1;--bg-2:#f0ede4;--bg-3:#e8e4d8;
+  --surface:#fff;--surface-2:#f5f2eb;
+  --border:rgba(0,0,0,0.09);--border-2:rgba(184,147,42,0.3);
+  --ink:#1a1810;--ink-2:#3a3628;--ink-3:#7a7060;--ink-4:#b0a898;
+  --sh:0 2px 16px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.04);
+  --sh-lg:0 8px 40px rgba(0,0,0,.1);
+}
+[data-theme="dark"]{
+  --bg:#0c0c0a;--bg-2:#141410;--bg-3:#1e1e18;
+  --surface:#161612;--surface-2:#1e1e18;
+  --border:rgba(255,255,255,0.07);
+  --ink:#f0ede4;--ink-2:#c8c4b8;--ink-3:#7a7870;--ink-4:#4a4840;
+  --sh:0 2px 20px rgba(0,0,0,.4);--sh-lg:0 8px 40px rgba(0,0,0,.6);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:'DM Mono',monospace;
+  font-weight:300;min-height:100vh;transition:background .3s,color .3s}
+
+/* ── GRAIN ── */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  opacity:.4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")}
+
+/* ── FIXED CONTROLS ── */
+.fixed-controls{display:none}
+.bottom-controls{position:fixed;bottom:1.5rem;left:1.5rem;z-index:300;display:flex;gap:8px;align-items:center}
+.ctrl-btn{background:var(--surface);border:1px solid var(--border);
+  color:var(--ink-3);font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;
+  cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.ctrl-btn:hover{border-color:var(--gold);color:var(--gold-l)}
+.ctrl-btn.on{background:var(--gold);border-color:var(--gold);color:#fff}
+.view-toggle{display:flex;border:1px solid var(--border);overflow:hidden}
+.vt-btn{background:none;border:none;font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;
+  cursor:pointer;transition:all .2s;color:var(--ink-4)}
+.vt-btn.on{background:var(--gold);color:#fff}
+.hdr-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--ink);color:var(--bg);font-family:'DM Mono',monospace;
+  font-size:11px;letter-spacing:.08em;padding:10px 20px;
+  z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── ONBOARDING ── */
+.ob-ov{position:fixed;inset:0;z-index:400;display:none;
+  align-items:center;justify-content:center;padding:1.5rem;
+  background:#000;overflow:hidden}
+.ob-ov.visible{display:flex}
+.ob-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,
+  rgba(184,147,42,.08) 0%,transparent 70%);animation:ob-bg-pulse 4s ease-in-out infinite}
+@keyframes ob-bg-pulse{0%,100%{opacity:.6}50%{opacity:1}}
+.ob-card{position:relative;width:100%;max-width:460px;
+  background:rgba(10,9,7,.95);border:1px solid rgba(184,147,42,.2);
+  padding:0;overflow:hidden;box-shadow:0 0 80px rgba(184,147,42,.08),0 40px 80px rgba(0,0,0,.8)}
+.ob-progress-bar{height:1px;background:rgba(184,147,42,.15);position:relative}
+.ob-progress-fill{height:1px;background:var(--gold);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.ob-content{padding:2.5rem}
+.ob-dots{display:flex;gap:5px;margin-bottom:2rem}
+.ob-dot{width:5px;height:5px;border-radius:50%;
+  background:rgba(184,147,42,.2);transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+.ob-dot.on{width:18px;border-radius:2.5px;background:var(--gold)}
+.ob-step-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(184,147,42,.5);margin-bottom:1.5rem}
+.ob-icon-wrap{width:48px;height:48px;border:1px solid rgba(184,147,42,.25);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:1.5rem;background:transparent;
+  animation:ob-icon-in .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ob-icon-in{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.ob-icon{font-family:'DM Mono',monospace;font-size:14px;font-weight:400;
+  letter-spacing:.08em;color:var(--gold);display:block}
+.ob-title{font-family:'Cormorant Garamond',serif;font-size:clamp(24px,5vw,32px);
+  font-weight:300;color:#f0ede4;margin-bottom:1rem;line-height:1.15;
+  animation:ob-text-in .45s ease forwards;opacity:0;animation-delay:.1s}
+.ob-title em{font-style:italic;color:var(--gold-l)}
+@keyframes ob-text-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ob-body{font-size:11px;color:rgba(240,237,228,.5);line-height:1.9;letter-spacing:.04em;
+  margin-bottom:2rem;white-space:pre-line;
+  animation:ob-text-in .45s ease forwards;opacity:0;animation-delay:.2s}
+.ob-actions{display:flex;gap:10px;align-items:center}
+.ob-next{flex:1;padding:13px 0;background:transparent;
+  border:1px solid var(--gold);color:var(--gold-l);
+  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+  letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden}
+.ob-next::before{content:'';position:absolute;inset:0;
+  background:var(--gold);transform:translateX(-100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:0}
+.ob-next:hover::before{transform:translateX(0)}
+.ob-next span{position:relative;z-index:1}
+.ob-next:hover{color:#000}
+.ob-skip{background:none;border:none;font-family:'DM Mono',monospace;font-size:9px;
+  color:rgba(240,237,228,.2);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  transition:color .2s}
+.ob-skip:hover{color:rgba(240,237,228,.5)}
+.ob-last-card{text-align:center}
+.ob-last-card .ob-icon-wrap{margin:0 auto 1.5rem}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:2rem 2rem 4rem;position:relative;z-index:1}
+.login-card{width:100%;max-width:440px}
+.eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:2rem;display:flex;align-items:center;gap:12px}
+.eyebrow::after{content:'';flex:1;height:1px;
+  background:linear-gradient(to right,rgba(184,147,42,.4),transparent)}
+.big-title{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(40px,9vw,58px);font-weight:300;line-height:1.05;
+  color:var(--ink);margin-bottom:.75rem}
+.big-title em{font-style:italic;color:var(--gold-l)}
+.login-sub{font-size:11px;color:var(--ink-3);letter-spacing:.06em;
+  margin-bottom:3rem;line-height:1.7}
+.text-field{width:100%;background:transparent;border:none;
+  border-bottom:1px solid var(--border-2);color:var(--ink);
+  font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;
+  padding:12px 0;outline:none;transition:border-color .3s;
+  margin-bottom:2.5rem;letter-spacing:.02em}
+.text-field::placeholder{color:var(--ink-4);font-style:italic}
+.text-field:focus{border-bottom-color:var(--gold)}
+.gold-btn{width:100%;padding:14px 0;background:var(--gold);color:#fff;
+  border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;
+  letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.gold-btn:hover{background:var(--gold-l)}
+.login-disc{margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);
+  font-size:10px;color:var(--ink-4);line-height:1.8;letter-spacing:.04em}
+.brand-line{margin-top:3rem;font-size:9px;color:var(--ink-4);
+  letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.brand-line .brand{color:var(--gold);text-decoration:none;transition:color .2s}.brand-line .brand:hover{color:var(--gold-l)}
+
+/* ── APP ── */
+#app-screen{display:none;position:relative;z-index:1}
+
+/* ── HEADER ── */
+.app-hdr{padding:1.25rem 2rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);box-shadow:var(--sh);
+  position:sticky;top:0;z-index:50}
+.hdr-left{display:flex;flex-direction:column;gap:3px}
+.hdr-ey{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;color:var(--ink)}
+.hdr-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hdr-btn{background:none;border:1px solid var(--border);color:var(--ink-3);
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all .2s}
+.hdr-btn:hover,.hdr-btn.on{border-color:var(--gold);color:var(--gold-l)}
+.hdr-brand{font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);opacity:.55;text-decoration:none;transition:opacity .2s}
+.hdr-brand:hover{opacity:1}
+
+/* ── PAGE ── */
+.page{max-width:780px;margin:0 auto;padding:2.5rem 2rem 6rem}
+
+/* ── DESKTOP LAYOUT (via body class) ── */
+body.desktop-mode .page{max-width:1060px;padding:2.5rem 3rem 6rem}
+body.desktop-mode .app-hdr{max-width:none}
+body.desktop-mode .calc-layout{display:flex;gap:3.5rem;align-items:flex-start}
+body.desktop-mode .calc-left{flex:1;min-width:0}
+body.desktop-mode .calc-right{
+  flex:0 0 320px;position:sticky;top:5rem;
+  border-left:1px solid var(--border);padding-left:2.5rem;
+}
+body.desktop-mode .cwa-num{font-size:84px}
+body.desktop-mode .stats-grid{grid-template-columns:1fr 1fr}
+body.desktop-mode .tbl-hdr,
+body.desktop-mode .course-row{grid-template-columns:1fr 84px 84px 28px}
+body.desktop-mode .hide-mobile{display:block}
+
+/* ── MOBILE LAYOUT ── */
+body.mobile-mode .calc-layout{display:flex;flex-direction:column}
+body.mobile-mode .calc-right{margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border)}
+body.mobile-mode .tbl-hdr,
+body.mobile-mode .course-row{grid-template-columns:1fr 72px 28px}
+body.mobile-mode .tbl-hdr span:nth-child(2),
+body.mobile-mode .c-cr{display:none}
+body.mobile-mode .hdr-brand{display:none}
+body.mobile-mode .page{padding:2rem 1.25rem 5rem}
+body.mobile-mode .app-hdr{padding:1rem 1.25rem}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--ink-3);font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;padding:10px 18px;
+  cursor:pointer;transition:all .2s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.on{color:var(--gold-l);border-bottom-color:var(--gold)}
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+
+/* ── TITLES ── */
+.pg-title{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(28px,5vw,38px);font-weight:300;color:var(--ink);margin-bottom:.4rem}
+.pg-title em{font-style:italic;color:var(--gold-l)}
+.pg-sub{font-size:10px;color:var(--ink-3);letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:1.5rem}
+
+/* ── DISCLAIMER ── */
+.disc{padding:14px 18px;border-left:2px solid var(--gold);
+  background:var(--gold-glow);margin-bottom:1.5rem}
+.disc p{font-size:11px;color:var(--ink-3);line-height:1.8;letter-spacing:.03em}
+.disc strong{color:var(--gold);font-weight:400}
+
+/* ── AI TOGGLE ── */
+.ai-row{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:var(--surface-2);
+  border:1px solid var(--border);margin-bottom:1.25rem}
+.ai-info{display:flex;flex-direction:column;gap:3px}
+.ai-label{font-size:12px;font-weight:500;color:var(--ink);letter-spacing:.04em}
+.ai-sub{font-size:10px;color:var(--ink-3)}
+.sw{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw-track{position:absolute;inset:0;background:var(--bg-3);
+  border-radius:12px;transition:background .25s}
+.sw-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;
+  background:#fff;border-radius:50%;transition:transform .25s;
+  box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.sw input:checked ~ .sw-track{background:var(--gold)}
+.sw input:checked ~ .sw-thumb{transform:translateX(20px)}
+
+/* ── TABLE ── */
+.tbl-hdr{display:grid;grid-template-columns:1fr 84px 84px 28px;
+  gap:10px;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.tbl-hdr span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-4);text-align:center}
+.tbl-hdr span:first-child{text-align:left}
+.course-row{display:grid;grid-template-columns:1fr 84px 84px 28px;
+  gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.course-row:last-child{border-bottom:none}
+.c-code,.c-name{background:transparent;border:none;
+  border-bottom:1px solid transparent;color:var(--ink);
+  font-family:'DM Mono',monospace;outline:none;width:100%;
+  padding:2px 0;transition:border-color .2s}
+.c-code{font-size:12px;font-weight:500;letter-spacing:.06em}
+.c-name{font-size:10px;color:var(--ink-3);margin-top:2px}
+.c-code:focus,.c-name:focus{border-bottom-color:var(--border-2)}
+.c-cr,.c-score{width:100%;background:var(--surface-2);
+  border:1px solid var(--border);font-family:'DM Mono',monospace;
+  font-size:14px;text-align:center;padding:7px 0;
+  outline:none;-moz-appearance:textfield;transition:all .2s;color:var(--ink)}
+.c-cr::-webkit-inner-spin-button,.c-score::-webkit-inner-spin-button{display:none}
+.c-cr:focus{border-color:var(--gold)}
+.c-score::placeholder{color:var(--ink-4);font-size:12px}
+.c-score:focus{border-color:var(--gold);background:var(--gold-glow);color:var(--gold-l)}
+.del-btn{background:none;border:none;color:var(--ink-4);cursor:pointer;
+  font-size:18px;padding:4px;transition:color .2s;
+  display:flex;align-items:center;justify-content:center}
+.del-btn:hover{color:#c0392b}
+.row-actions{display:flex;justify-content:space-between;
+  align-items:center;padding-top:1rem;gap:8px}
+.add-btn{background:none;border:1px dashed var(--border-2);color:var(--ink-3);
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all .2s}
+.add-btn:hover{border-color:var(--gold);color:var(--gold-l)}
+.rst-btn{background:none;border:none;font-family:'DM Mono',monospace;font-size:10px;
+  color:var(--ink-4);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px}
+.rst-btn:hover{color:var(--ink)}
+
+/* ── RESULTS ── */
+.cwa-num{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(64px,14vw,88px);font-weight:300;line-height:1;
+  color:var(--ink);transition:color .4s;margin-bottom:.5rem}
+.cwa-num.gold{color:var(--gold-l)}
+.r-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:6px}
+.grade-badge{display:inline-block;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;padding:5px 12px;font-weight:500;margin-bottom:6px}
+.gpa-line{font-size:12px;color:var(--ink-3);letter-spacing:.08em;margin-bottom:1.5rem}
+.prog-track{height:1px;background:var(--border);margin-bottom:.5rem}
+.prog-fill{height:1px;background:var(--gold);
+  transition:width .5s cubic-bezier(.4,0,.2,1);width:0%}
+.prog-labels{display:flex;justify-content:space-between;margin-bottom:1.5rem}
+.prog-labels span{font-size:8px;color:var(--ink-4);letter-spacing:.04em}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem}
+.stat-box{padding:12px 14px;border:1px solid var(--border);background:var(--surface)}
+.stat-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:400;
+  color:var(--ink);letter-spacing:.04em;margin-bottom:3px}
+.stat-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.bd-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:10px;margin-top:1.5rem}
+.bd-row{display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--border);font-size:11px}
+.bd-row:last-child{border-bottom:none}
+.bd-course{color:var(--ink-3);letter-spacing:.06em;font-size:11px}
+.bd-score{font-weight:500;font-size:13px;color:var(--ink)}
+.bd-bar{flex:1;margin:0 12px;height:1px;background:var(--border);position:relative}
+.bd-bar-fill{position:absolute;top:0;left:0;height:1px;background:var(--gold);transition:width .4s}
+.exp-btn{background:none;border:1px solid var(--border-2);color:var(--gold);
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;padding:8px 16px;cursor:pointer;
+  transition:all .2s;margin-top:1.25rem;display:none}
+.exp-btn:hover{background:var(--gold-glow)}
+
+/* ── TARGET TAB ── */
+.target-field{background:transparent;border:none;
+  border-bottom:1px solid var(--border-2);color:var(--ink);
+  font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;
+  width:90px;outline:none;padding:4px 0;-moz-appearance:textfield;text-align:center}
+.target-field::-webkit-inner-spin-button{display:none}
+.target-field:focus{border-bottom-color:var(--gold)}
+.grade-preset-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem}
+.gp-btn{background:none;border:1px solid var(--border);color:var(--ink-3);
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;
+  padding:7px 14px;cursor:pointer;transition:all .2s}
+.gp-btn:hover{border-color:var(--gold);color:var(--gold-l)}
+.gp-btn.on{background:var(--gold-glow);border-color:var(--gold);color:var(--gold-l)}
+.target-result{padding:18px;border:1px solid var(--border-2);background:var(--gold-glow)}
+.tr-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:12px}
+.tr-row{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+.tr-row:last-of-type{border-bottom:none}
+.tr-course{color:var(--ink-3);letter-spacing:.06em}
+.tr-score{font-family:'DM Mono',monospace;font-size:15px;font-weight:500}
+.tr-score.ok{color:var(--gold-l)}
+.tr-score.bad{color:#c0392b}
+.tr-score.done{color:#27ae60}
+.tr-range{font-size:10px;color:var(--ink-3);margin-top:3px;letter-spacing:.04em}
+
+/* ── RANGE BAR ── */
+.range-bar-wrap{margin-bottom:1.5rem;padding:14px 16px;
+  background:var(--gold-glow);border:1px solid var(--border-2)}
+.range-bar-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:8px}
+.range-bar-track{height:6px;background:var(--border);border-radius:3px;
+  position:relative;margin-bottom:6px}
+.range-bar-fill{position:absolute;height:6px;background:var(--gold);border-radius:3px;transition:all .4s}
+.range-bar-labels{display:flex;justify-content:space-between;
+  font-size:9px;color:var(--ink-4)}
+
+/* ── GLOW TAB ── */
+.glow-tab{position:fixed;bottom:2rem;right:2rem;z-index:100;display:none}
+.glow-btn{background:var(--surface);border:1px solid var(--gold);
+  color:var(--gold-l);font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;padding:10px 18px;
+  cursor:pointer;transition:all .2s;box-shadow:var(--sh);
+  animation:gp 2.5s ease-in-out infinite}
+@keyframes gp{
+  0%,100%{box-shadow:0 0 8px rgba(184,147,42,.2),var(--sh)}
+  50%{box-shadow:0 0 20px rgba(184,147,42,.5),var(--sh)}}
+.glow-btn:hover{background:var(--gold-glow)}
+
+/* ── MODE OVERLAY ── */
+.mode-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(10px);z-index:200;align-items:center;
+  justify-content:center;padding:2rem}
+.mode-ov.on{display:flex}
+.mode-wrap{width:100%;max-width:540px}
+.mode-title{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(28px,6vw,40px);font-weight:300;color:#f0ede4;margin-bottom:.5rem}
+.mode-sub{font-size:11px;color:#7a7870;margin-bottom:2rem;letter-spacing:.05em}
+.mode-choices{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem}
+.mode-choice{border:1px solid rgba(184,147,42,.25);background:transparent;
+  padding:1.5rem;cursor:pointer;text-align:left;transition:all .2s;
+  color:#f0ede4;font-family:'DM Mono',monospace}
+.mode-choice:hover{background:rgba(184,147,42,.07);border-color:#b8932a}
+.mc-icon{font-size:26px;margin-bottom:10px;display:block}
+.mc-title{font-size:12px;font-weight:500;letter-spacing:.1em;
+  text-transform:uppercase;color:#d4aa4a;margin-bottom:5px}
+.mc-desc{font-size:10px;color:#7a7870;letter-spacing:.04em;line-height:1.6}
+.mode-skip{background:none;border:none;font-family:'DM Mono',monospace;
+  font-size:10px;color:#7a7870;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+/* ── IPHONE ── */
+#iphone-screen,#bloomberg-screen{display:none;min-height:100vh;
+  align-items:center;justify-content:center;padding:2rem;background:#000}
+#iphone-screen.on,#bloomberg-screen.on{display:flex}
+.back-btn{position:fixed;top:1.5rem;left:1.5rem;z-index:50;
+  background:none;border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.5);font-family:'DM Mono',monospace;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  padding:8px 14px;cursor:pointer;transition:all .2s}
+.back-btn:hover{border-color:#b8932a;color:#d4aa4a}
+.iphone{width:340px;height:700px;
+  background:linear-gradient(160deg,#1c1c1e,#0a0a0c);
+  border-radius:52px;position:relative;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),
+    0 40px 80px rgba(0,0,0,.8),
+    0 0 0 10px #0a0a0c,
+    0 0 0 11px rgba(255,255,255,.08);
+  overflow:hidden;flex-shrink:0}
+.iphone-inner{position:absolute;inset:0;border-radius:52px;overflow:hidden;background:#1c1c1e}
+.di{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:120px;height:34px;background:#000;border-radius:20px;z-index:10;
+  transition:all .4s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.di.exp{width:280px;height:60px;border-radius:28px}
+.di-c{opacity:0;display:flex;align-items:center;gap:10px;
+  padding:0 14px;width:100%;transition:opacity .3s .2s}
+.di.exp .di-c{opacity:1}
+.di-lbl{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase}
+.di-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:400;color:#fff}
+.di-gr{font-size:9px;letter-spacing:.08em}
+.i-status{position:absolute;top:0;left:0;right:0;height:58px;
+  display:flex;align-items:flex-start;padding:14px 24px 0;justify-content:space-between;z-index:5}
+.i-time{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#fff}
+.i-icons{font-size:11px;color:#fff;letter-spacing:2px}
+.i-content{position:absolute;top:58px;left:0;right:0;bottom:80px;
+  overflow-y:auto;padding:8px 20px 16px}
+.i-content::-webkit-scrollbar{display:none}
+.i-app-hdr{padding:12px 0 14px;border-bottom:.5px solid rgba(255,255,255,.1);margin-bottom:12px}
+.i-app-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:#fff}
+.i-app-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.i-row{display:flex;align-items:center;padding:9px 0;
+  border-bottom:.5px solid rgba(255,255,255,.06);gap:10px}
+.i-info{flex:1;min-width:0}
+.i-code{font-size:12px;font-weight:500;color:#fff;letter-spacing:.05em}
+.i-name{font-size:10px;color:rgba(255,255,255,.3);margin-top:1px}
+.i-cr{font-size:10px;color:#b8932a;width:28px;text-align:center;flex-shrink:0}
+.i-inp{width:56px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);border-radius:8px;
+  color:#fff;font-family:'DM Mono',monospace;font-size:14px;
+  text-align:center;padding:6px 4px;outline:none;
+  -moz-appearance:textfield;flex-shrink:0}
+.i-inp::-webkit-inner-spin-button{display:none}
+.i-inp:focus{border-color:#b8932a;color:#d4aa4a}
+.kb-ov{position:absolute;bottom:0;left:0;right:0;background:#1c1c1e;
+  border-top:.5px solid rgba(255,255,255,.1);padding:12px;z-index:20;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.kb-ov.vis{transform:translateY(0)}
+.kb-lbl{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:8px;text-align:center}
+.kb-disp{font-family:'DM Mono',monospace;font-size:36px;font-weight:300;
+  color:#fff;text-align:right;padding:4px 8px 8px;min-height:50px}
+.kb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kb-k{background:#2c2c2e;border:none;border-radius:10px;color:#fff;
+  font-family:'DM Mono',monospace;font-size:18px;padding:14px;cursor:pointer}
+.kb-k:active{background:#3a3a3c}
+.kb-k.act{background:#b8932a;color:#000;font-size:14px;font-weight:500}
+.kb-k.del{background:#3a3a3c;font-size:14px}
+.i-bar{position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:rgba(0,0,0,.9);display:flex;align-items:center;
+  padding:0 20px;gap:16px;border-top:.5px solid rgba(255,255,255,.08);z-index:15}
+.i-cwa{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:#fff}
+.i-cwa.g{color:#d4aa4a}
+.i-meta{flex:1}
+.i-gr-t{font-size:11px;color:rgba(255,255,255,.5)}
+.i-cr-t{font-size:10px;color:rgba(255,255,255,.25);margin-top:2px}
+.i-tog{font-size:10px;color:#b8932a;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:1px solid rgba(184,147,42,.3);padding:6px 10px;
+  cursor:pointer;font-family:'DM Mono',monospace}
+
+/* ── BLOOMBERG ── */
+#bloomberg-screen{background:#0a0a08;flex-direction:column;gap:1rem}
+.term{width:100%;max-width:700px;background:#0f0f0c;border:1px solid #2a2a20}
+.t-top{background:#1a1a12;padding:8px 16px;display:flex;
+  align-items:center;justify-content:space-between;border-bottom:1px solid #2a2a20}
+.t-title-t{font-size:10px;color:#b8932a;letter-spacing:.18em;
+  text-transform:uppercase;font-weight:500}
+.t-stat-t{font-size:9px;color:#4a4a38;letter-spacing:.12em}
+.t-stat-t span{color:#6ab36a}
+.t-disp{background:#050503;padding:18px 18px 14px;border-bottom:1px solid #1a1a12}
+.t-dlbl{font-size:9px;color:#4a4a38;letter-spacing:.2em;
+  text-transform:uppercase;margin-bottom:5px}
+.t-dval{font-family:'DM Mono',monospace;font-size:clamp(40px,8vw,62px);
+  font-weight:400;color:#e8a020;letter-spacing:.04em;line-height:1;transition:color .3s}
+.t-dgr{font-size:11px;color:#6a6a50;letter-spacing:.1em;margin-top:6px}
+.t-dgr span{color:#e8a020}
+.t-grid-t{display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:480px){.t-grid-t{grid-template-columns:1fr}}
+.t-row-t{padding:10px 14px;border-bottom:1px solid #1a1a12;
+  border-right:1px solid #1a1a12;display:flex;align-items:center;gap:10px}
+.t-row-t:nth-child(even){border-right:none}
+.t-code-t{font-size:11px;font-weight:500;color:#b8932a;
+  letter-spacing:.08em;width:58px;flex-shrink:0}
+.t-cr-t{font-size:10px;color:#4a4a38;width:22px;text-align:center;flex-shrink:0}
+.t-inp-t{flex:1;background:#050503;border:1px solid #2a2a20;color:#e8a020;
+  font-family:'DM Mono',monospace;font-size:15px;text-align:right;
+  padding:5px 8px;outline:none;-moz-appearance:textfield;transition:all .15s}
+.t-inp-t::-webkit-inner-spin-button{display:none}
+.t-inp-t:focus{border-color:#b8932a;color:#ffcc44}
+.t-inp-t::placeholder{color:#2a2a20;font-size:12px}
+.t-bot{padding:10px 14px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;flex-wrap:wrap}
+.t-stats-t{display:flex;gap:20px;flex-wrap:wrap}
+.t-st{font-size:10px;color:#4a4a38;letter-spacing:.1em}
+.t-st span{color:#6a8a6a}
+.t-clr{background:none;border:1px solid #2a2a20;color:#4a4a38;
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all .2s}
+.t-clr:hover{border-color:#b8932a;color:#b8932a}
+.ticker-w{background:#050503;border-top:1px solid #1a1a12;padding:6px 14px;overflow:hidden}
+.ticker{font-size:9px;color:#3a3a28;letter-spacing:.1em;white-space:nowrap;
+  animation:tk 28s linear infinite;display:inline-block}
+.ticker span{color:#6ab36a;margin:0 4px}
+@keyframes tk{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+
+/* ── FOOTER ── */
+.foot{margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border)}
+.foot p{font-size:10px;color:var(--ink-4);line-height:2;letter-spacing:.04em}
+.foot-brand{margin-top:2rem;font-size:9px;color:var(--ink-4);
+  letter-spacing:.16em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px}
+.foot-brand .b{color:var(--gold)}
+
+/* ── UTILS ── */
+.copyright-line{margin-top:.75rem;font-size:9px;color:var(--ink-4);letter-spacing:.12em;text-transform:uppercase}
+@keyframes sem2BtnGlow{
+  0%,100%{box-shadow:0 0 8px rgba(0,212,255,0.2),0 0 20px rgba(0,212,255,0.05)}
+  50%{box-shadow:0 0 18px rgba(0,212,255,0.45),0 0 40px rgba(0,212,255,0.12)}
+}
+#sem2-float-btn{animation:sem2BtnGlow 2.5s ease-in-out infinite}
+.fade-in{animation:fi .45s ease forwards}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── GUIDE BACK BUTTON ── */
+.ob-back{background:none;border:1px solid rgba(184,147,42,.25);
+  color:rgba(240,237,228,.35);font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;padding:13px 16px;cursor:pointer;
+  transition:all .25s;flex-shrink:0}
+.ob-back:hover{border-color:rgba(184,147,42,.5);color:rgba(240,237,228,.7)}
+.ob-back.hidden{opacity:0;pointer-events:none}
+
+/* ── GUIDE DROPDOWN ── */
+.guide-dd{position:relative}
+.guide-dd-trigger{position:relative}
+.guide-dd-panel{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--surface);border:1px solid var(--border);
+  box-shadow:var(--sh-lg);min-width:210px;z-index:200;
+  opacity:0;pointer-events:none;
+  transform:translateY(-6px);
+  transition:opacity .2s ease,transform .2s ease}
+.guide-dd-panel.open{opacity:1;pointer-events:all;transform:translateY(0)}
+.guide-dd-item{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:none;border:none;padding:12px 16px;
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);cursor:pointer;
+  transition:background .15s,color .15s;text-decoration:none;gap:12px}
+.guide-dd-item:hover{background:var(--surface-2);color:var(--ink)}
+.guide-dd-item.active{color:var(--gold-l)}
+.guide-dd-item.guide-dd-sem{color:rgba(0,212,255,.7)}
+.guide-dd-item.guide-dd-sem:hover{color:#00d4ff;background:rgba(0,212,255,.05)}
+.guide-dd-div{height:1px;background:var(--border)}
+.guide-dd-hint{font-size:9px;color:var(--ink-4);letter-spacing:.04em;
+  text-transform:none;font-weight:300;white-space:nowrap;flex-shrink:0}
+.guide-dd-badge{font-size:9px;padding:2px 8px;
+  background:var(--border);color:var(--ink-4);
+  letter-spacing:.06em;flex-shrink:0;transition:all .2s}
+.guide-dd-badge.active{
+  background:rgba(184,147,42,.15);color:var(--gold-l);
+  border:1px solid rgba(184,147,42,.3)}
+
+/* ═══════════════════════════════════════════════
+   CHALKBOARD / ABOUT SCREEN
+═══════════════════════════════════════════════ */
+#chalk-screen{
+  display:none;position:fixed;inset:0;z-index:600;
+  background:#1a2a1a;overflow-y:auto;overflow-x:hidden;
+}
+#chalk-screen.on{display:block}
+
+/* Chalk texture overlay */
+#chalk-screen::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='chalk'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23chalk)' opacity='0.06'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;
+}
+
+.chalk-inner{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:4rem 2.5rem 6rem}
+
+/* Close / back button */
+.chalk-back{
+  position:fixed;top:1.5rem;left:1.5rem;z-index:10;
+  background:none;border:2px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.5);font-family:'Caveat',cursive;font-size:16px;
+  padding:8px 18px;cursor:pointer;transition:all .25s;
+  letter-spacing:.04em;
+}
+.chalk-back:hover{border-color:rgba(255,255,255,.6);color:rgba(255,255,255,.9)}
+
+/* Chapter label */
+.chalk-chapter{
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.28em;
+  text-transform:uppercase;color:rgba(255,255,255,.25);
+  margin-bottom:2.5rem;display:flex;align-items:center;gap:14px;
+}
+.chalk-chapter::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+
+/* Big chalkboard title */
+.chalk-h1{
+  font-family:'Caveat',cursive;font-size:clamp(44px,9vw,74px);
+  font-weight:700;color:#fff;line-height:1.05;margin-bottom:.5rem;
+  text-shadow:2px 2px 0 rgba(0,0,0,.3);
+  animation:chalk-in .7s ease forwards;opacity:0;
+}
+.chalk-h1 em{color:#f5e642;font-style:normal}
+@keyframes chalk-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.chalk-sub{
+  font-family:'Caveat',cursive;font-size:20px;color:rgba(255,255,255,.45);
+  margin-bottom:4rem;letter-spacing:.02em;
+  animation:chalk-in .7s ease .15s forwards;opacity:0;
+}
+
+/* Section headers */
+.chalk-section{margin-bottom:3.5rem;animation:chalk-in .6s ease forwards;opacity:0}
+.chalk-section:nth-child(2){animation-delay:.1s}
+.chalk-section:nth-child(3){animation-delay:.2s}
+.chalk-section:nth-child(4){animation-delay:.3s}
+.chalk-section:nth-child(5){animation-delay:.4s}
+.chalk-section:nth-child(6){animation-delay:.5s}
+.chalk-section:nth-child(7){animation-delay:.6s}
+
+.chalk-sh{
+  font-family:'Caveat',cursive;font-size:clamp(26px,4vw,36px);
+  font-weight:700;color:#f5e642;margin-bottom:1rem;
+  display:flex;align-items:center;gap:12px;
+}
+.chalk-sh::before{
+  content:'';display:inline-block;width:4px;height:28px;
+  background:#f5e642;border-radius:2px;flex-shrink:0;
+}
+
+.chalk-p{
+  font-family:'Caveat',cursive;font-size:19px;color:rgba(255,255,255,.82);
+  line-height:1.75;margin-bottom:1rem;
+}
+.chalk-p strong{color:#fff;font-weight:700}
+.chalk-p em{color:#aee6f5;font-style:normal}
+.chalk-p .hi{color:#f5e642}
+
+/* Divider — chalk line */
+.chalk-rule{
+  height:1px;
+  background:linear-gradient(to right,transparent,rgba(255,255,255,.18),transparent);
+  margin:3rem 0;position:relative;
+}
+.chalk-rule::before{
+  content:'✦';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:#1a2a1a;padding:0 12px;
+  font-size:12px;color:rgba(255,255,255,.2);
+}
+
+/* Grade class board */
+.grade-board{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  padding:1.75rem;margin:1.5rem 0;position:relative;overflow:hidden;
+}
+.grade-board::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(to right,transparent,rgba(245,230,66,.4),transparent);
+}
+.grade-row{
+  display:flex;align-items:center;gap:16px;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.grade-row:last-child{border-bottom:none}
+.grade-num{
+  font-family:'Caveat',cursive;font-size:28px;font-weight:700;
+  min-width:80px;text-align:right;flex-shrink:0;
+}
+.grade-label{font-family:'Caveat',cursive;font-size:19px;color:rgba(255,255,255,.75)}
+.grade-bar-wrap{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.grade-bar{height:4px;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0}
+
+/* CWA vs GPA comparison */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:rgba(255,255,255,.08);margin:1.5rem 0}
+.compare-col{background:#1a2a1a;padding:1.25rem 1.5rem}
+.compare-head{font-family:'Caveat',cursive;font-size:22px;font-weight:700;
+  margin-bottom:.75rem}
+.compare-item{font-family:'Caveat',cursive;font-size:16px;
+  color:rgba(255,255,255,.65);padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5}
+.compare-item:last-child{border-bottom:none}
+
+/* Formula block */
+.chalk-formula{
+  font-family:'Caveat',cursive;font-size:clamp(20px,3.5vw,28px);
+  color:#f5e642;text-align:center;padding:1.5rem;
+  border:2px solid rgba(245,230,66,.25);
+  background:rgba(245,230,66,.04);margin:1.5rem 0;
+  letter-spacing:.03em;line-height:1.5;
+}
+
+/* Story card */
+.story-card{
+  background:rgba(255,255,255,.03);border-left:3px solid rgba(245,230,66,.5);
+  padding:1.25rem 1.5rem;margin:1.5rem 0;
+}
+.story-card .chalk-p{margin-bottom:.5rem}
+.story-card .chalk-p:last-child{margin-bottom:0}
+
+/* Underline squiggle effect */
+.chalk-ul{
+  display:inline;
+  background-image:linear-gradient(to right,rgba(174,230,245,.6) 0%,rgba(174,230,245,.6) 100%);
+  background-repeat:no-repeat;background-position:0 88%;background-size:100% 2px;
+}
+
+/* Chalk nav dots at bottom */
+.chalk-nav{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:10;
+}
+.chalk-nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,.2);cursor:pointer;transition:all .2s;border:none;padding:0;
+}
+.chalk-nav-dot.on{background:#f5e642;width:18px;border-radius:3px}
+
+/* Mobile tweaks */
+@media(max-width:600px){
+  .chalk-inner{padding:3rem 1.25rem 5rem}
+  .compare-grid{grid-template-columns:1fr}
+  .grade-row{flex-wrap:wrap}
+  .grade-bar-wrap{display:none}
+}
+
+
+/* ── ABOUT BUTTON (login) ── */
+.about-btn{width:100%;padding:12px 0;background:transparent;
+  border:1px solid var(--border-2);color:var(--gold);
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:400;
+  letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
+  transition:all .2s;margin-top:10px}
+.about-btn:hover{background:var(--gold-glow)}
+</style>
+</head>
+<body class="mobile-mode">
+
+<!-- fixed controls in header -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ONBOARDING -->
+<div class="ob-ov" id="ob-ov" style="display:none">
+  <div class="ob-bg"></div>
+  <div class="ob-card">
+    <div class="ob-progress-bar">
+      <div class="ob-progress-fill" id="ob-prog"></div>
+    </div>
+    <div class="ob-content" id="ob-content">
+      <div class="ob-dots" id="ob-dots"></div>
+      <p class="ob-step-label" id="ob-step-label">Step 1 of 7</p>
+      <div class="ob-icon-wrap" id="ob-icon-wrap">
+        <span class="ob-icon" id="ob-icon"></span>
+      </div>
+      <h2 class="ob-title" id="ob-title"></h2>
+      <p class="ob-body" id="ob-body"></p>
+      <div class="ob-actions">
+        <button class="ob-back" id="ob-back-btn" onclick="obBack()">← Back</button>
+        <button class="ob-next" id="ob-next-btn" onclick="obNext()"><span id="ob-next-label">Next →</span></button>
+        <button class="ob-skip" onclick="obSkip()">Skip</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card fade-in">
+    <div class="eyebrow">KNUST · Biomedical Engineering · 2025/26</div>
+
+    <h1 class="big-title">CWA<br><em>Calculator</em></h1>
+    <p class="login-sub">Semester 1 · Weighted by credit hours · KNUST grading system</p>
+    <input type="text" id="name-input" class="text-field" placeholder="Your full name" autocomplete="off" />
+    <button class="gold-btn" onclick="enterApp()">Enter Calculator</button>
+    <button class="about-btn" onclick="openChalk()">About &amp; How it Works</button>
+    <p class="login-disc">Estimation only. Scores are not stored, saved, or shared — they exist only in your browser session. For official CWA, consult the KNUST UITS.</p>
+    <div class="brand-line">
+      <span>Built by</span><a class="brand" href="https://github.com/okyereasante08-afk" target="_blank" rel="noopener noreferrer">Asante Inc.</a>
+    </div>
+    <div class="copyright-line">© 2026 Asante Inc. All rights reserved.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="app-hdr fade-in">
+    <div class="hdr-left">
+      <div class="hdr-ey">Logged in as</div>
+      <div class="hdr-name" id="display-name">—</div>
+    </div>
+    <div class="hdr-actions">
+      <a class="hdr-brand" href="https://github.com/okyereasante08-afk" target="_blank" rel="noopener noreferrer">Asante Inc.</a>
+      <!-- Guide dropdown -->
+      <div class="guide-dd" id="guide-dd">
+        <button class="hdr-btn guide-dd-trigger" onclick="toggleGuideDd()" id="guide-dd-trigger">Guide &#9662;</button>
+        <div class="guide-dd-panel" id="guide-dd-panel">
+          <button class="guide-dd-item" onclick="startOnboard();closeGuideDd()">
+            <span>Open Guide</span>
+            <span class="guide-dd-hint">7 steps</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item guide-dd-toggle" id="gpa-dd-item" onclick="toggleGPA();updateGpaItem()">
+            <span>GPA Scale</span>
+            <span class="guide-dd-badge" id="gpa-dd-badge">Off</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item" onclick="saveConfig();closeGuideDd()">
+            <span>Save Setup</span>
+            <span class="guide-dd-hint">Saves courses</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item guide-dd-sem" onclick="openSem2Popup();closeGuideDd()">
+            <span>2nd Semester</span>
+            <span class="guide-dd-hint">Portal + feedback</span>
+          </button>
+          <div class="guide-dd-div"></div>
+          <button class="guide-dd-item" onclick="openChalk();closeGuideDd()">
+            <span>About &amp; How it Works</span>
+            <span class="guide-dd-hint">↗</span>
+          </button>
+        </div>
+      </div>
+      <button class="hdr-btn" onclick="confirmLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <h1 class="pg-title">Semester <em>CWA</em></h1>
+    <p class="pg-sub">BME Year 1 · Semester 1 · 2025/26</p>
+
+    <div class="tabs">
+      <button class="tab-btn on" onclick="switchTab('calc')">Calculator</button>
+      <button class="tab-btn" onclick="switchTab('target')">Target CWA</button>
+    </div>
+
+    <!-- CALCULATOR TAB -->
+    <div class="tab-panel on" id="tab-calc">
+      <div class="calc-layout">
+
+        <!-- LEFT: INPUTS -->
+        <div class="calc-left">
+          <div class="disc">
+            <p><strong>Disclaimer:</strong> Estimation only. Missing courses excluded. Results are <strong>not official</strong>. No data saved.</p>
+          </div>
+
+          <div class="ai-row">
+            <div class="ai-info">
+              <span class="ai-label">AI 150 — Responsible AI for All</span>
+              <span class="ai-sub">2 credits · Toggle to include in CWA</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="ai-toggle" onchange="toggleAI()" />
+              <div class="sw-track"></div>
+              <div class="sw-thumb"></div>
+            </label>
+          </div>
+
+          <div class="tbl-hdr">
+            <span>Course</span><span>Credits</span><span>Score /100</span><span></span>
+          </div>
+          <div id="course-table"></div>
+          <div class="row-actions">
+            <button class="add-btn" onclick="addCourse()">+ Add course</button>
+            <button class="rst-btn" onclick="resetScores()">Reset scores</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: RESULTS -->
+        <div class="calc-right">
+          <p class="r-label" id="scale-label">Projected CWA</p>
+          <div class="cwa-num" id="cwa-display">—</div>
+          <span class="grade-badge" id="grade-badge" style="display:none"></span>
+          <div class="gpa-line" id="gpa-line" style="display:none"></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+          <div class="prog-labels">
+            <span>0</span><span>50</span><span>60</span><span>70</span><span>100</span>
+          </div>
+          <div class="stats-grid" id="stats-grid" style="display:none"></div>
+          <div id="bd-section" style="display:none">
+            <p class="bd-title">Breakdown</p>
+            <div id="bd-rows"></div>
+          </div>
+          <button class="exp-btn" onclick="exportResults()" id="exp-btn">Export results</button>
+        </div>
+
+      </div><!-- end calc-layout -->
+
+      <div class="foot">
+        <p>· Scores not saved, transmitted or stored.<br>
+        · First Class ≥70 · 2nd Upper 60–69.99 · 2nd Lower 50–59.99 · Below Pass &lt;50<br>
+        · GPA (4.0): A≥70=4.0 · B+60–69=3.5 · B50–59=3.0 · F&lt;50=0.0<br>
+        · For official CWA consult the KNUST UITS.</p>
+        <div class="foot-brand">
+          <span>Built by</span>
+          <a href="https://github.com/okyereasante08-afk" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none;letter-spacing:.16em">Asante Inc.</a>
+          <span>· Asante · KNUST BME1 · Class of 2029</span>
+        </div>
+        <p style="margin-top:.75rem;font-size:9px;color:var(--ink-4);letter-spacing:.12em;text-transform:uppercase">© 2026 Asante Inc.</p>
+        <p style="margin-top:1rem;font-size:10px;color:var(--ink-4);letter-spacing:.06em;line-height:1.8">
+          Also check out the full
+          <a href="https://knust-bme1.vercel.app" target="_blank" rel="noopener noreferrer"
+            style="color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(184,147,42,.3)">KNUST BME1 Student Portal</a>
+          — timetable, attendance, AI assistant, study tools &amp; more.
+        </p>
+        <div style="margin-top:1.5rem;padding:16px 18px;border:1px solid rgba(184,147,42,.2);background:rgba(184,147,42,.04)">
+          <p style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Semester 2 is coming</p>
+          <p style="font-size:11px;color:var(--ink-3);line-height:1.8;letter-spacing:.03em;margin-bottom:10px">
+            Congratulations on completing Semester 1. The BME1 Portal is already being prepared for Semester 2 — new timetable, updated survival kit, and everything you need.
+          </p>
+          <a href="https://forms.gle/3u5F82nnwHDqCdRQA" target="_blank" rel="noopener noreferrer"
+            style="font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid rgba(184,147,42,.3)">
+            Share your feedback →
+          </a>
+        </div>
+        <p style="margin-top:1.5rem;font-size:9px;color:var(--ink-4);letter-spacing:.12em;text-transform:uppercase;opacity:.5">
+          © 2026 Asante Inc. · All rights reserved
+        </p>
+      </div>
+    </div>
+
+    <!-- TARGET TAB -->
+    <div class="tab-panel" id="tab-target">
+      <p style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--ink);margin-bottom:1.5rem">
+        What do I need to hit my <em style="color:var(--gold-l)">target?</em>
+      </p>
+
+      <p style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Select grade class or enter custom target</p>
+
+      <div class="grade-preset-wrap" id="gp-btns">
+        <button class="gp-btn on" onclick="selectPreset(this,70,100)">First Class <span style="opacity:.5">≥70</span></button>
+        <button class="gp-btn" onclick="selectPreset(this,60,69.99)">2nd Upper <span style="opacity:.5">60–69</span></button>
+        <button class="gp-btn" onclick="selectPreset(this,50,59.99)">2nd Lower <span style="opacity:.5">50–59</span></button>
+        <button class="gp-btn" onclick="selectPreset(this,null,null)">Custom</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
+        <input type="number" id="target-input" class="target-field" min="0" max="100" placeholder="70" oninput="calcTarget()" />
+        <span style="font-size:11px;color:var(--ink-3);letter-spacing:.08em">out of 100</span>
+      </div>
+
+      <div id="range-bar-wrap" style="display:none"></div>
+      <p style="font-size:11px;color:var(--ink-3);margin-bottom:1.5rem;letter-spacing:.06em;line-height:1.6">
+        Enter known scores in the Calculator tab first. Blank courses show the score range you need.
+      </p>
+      <div id="target-result"></div>
+    </div>
+  </div><!-- end .page -->
+</div><!-- end #app-screen -->
+
+<!-- GLOW TAB -->
+<div class="glow-tab" id="glow-tab">
+  <button class="glow-btn" onclick="showMode()">✦ Interactive Mode</button>
+</div>
+
+<!-- BOTTOM-LEFT VIEW/THEME CONTROLS -->
+<div class="bottom-controls" id="bottom-controls" style="display:none">
+  <div class="view-toggle">
+    <button class="vt-btn" id="vt-dt" onclick="setView('desktop')">Desktop</button>
+    <button class="vt-btn on" id="vt-mb" onclick="setView('mobile')">Mobile</button>
+  </div>
+  <button class="ctrl-btn" id="theme-btn" onclick="toggleTheme()">Dark</button>
+</div>
+
+<!-- MODE OVERLAY -->
+<div class="mode-ov" id="mode-ov">
+  <div class="mode-wrap">
+    <div class="eyebrow" style="color:#b8932a;margin-bottom:1.25rem">Choose your interface</div>
+    <h2 class="mode-title">Interactive<br>Mode</h2>
+    <p class="mode-sub">Same calculation. Different experience.</p>
+    <div class="mode-choices">
+      <button class="mode-choice" onclick="enterMode('iphone')">
+        <span class="mc-icon">📱</span>
+        <div class="mc-title">iPhone 15 Pro</div>
+        <div class="mc-desc">Dynamic Island shows live CWA. Numeric keypad or type-in. Feels like a real app.</div>
+      </button>
+      <button class="mode-choice" onclick="enterMode('bloomberg')">
+        <span class="mc-icon">📊</span>
+        <div class="mc-title">Bloomberg Terminal</div>
+        <div class="mc-desc">Amber LED display. Physical terminal aesthetic. The kind of thing hedge fund managers use.</div>
+      </button>
+    </div>
+    <button class="mode-skip" onclick="hideMode()">Stay in standard mode</button>
+  </div>
+</div>
+
+<!-- IPHONE -->
+<div id="iphone-screen">
+  <button class="back-btn" onclick="exitMode()">← Back</button>
+  <div class="iphone">
+    <div class="iphone-inner">
+      <div class="di" id="di">
+        <div class="di-c">
+          <div><div class="di-lbl">CWA</div><div class="di-val" id="di-val">—</div></div>
+          <div class="di-gr" id="di-gr" style="color:#b8932a"></div>
+        </div>
+      </div>
+      <div class="i-status"><span class="i-time" id="i-time">9:41</span><span class="i-icons">▶ ⊙ ▊</span></div>
+      <div class="i-content">
+        <div class="i-app-hdr">
+          <div class="i-app-title">CWA Calc</div>
+          <div class="i-app-sub">KNUST BME1 · Sem 1</div>
+        </div>
+        <div id="i-courses"></div>
+      </div>
+      <div class="i-bar">
+        <div><div class="i-cwa" id="i-cwa">—</div></div>
+        <div class="i-meta">
+          <div class="i-gr-t" id="i-gr-t">Enter scores above</div>
+          <div class="i-cr-t" id="i-cr-t">0 credits</div>
+        </div>
+        <button class="i-tog" id="kb-tog" onclick="toggleKb()">Keypad</button>
+      </div>
+      <div class="kb-ov" id="kb-ov">
+        <div class="kb-lbl" id="kb-lbl">Select a course</div>
+        <div class="kb-disp" id="kb-disp">—</div>
+        <div class="kb-grid" id="kb-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOOMBERG -->
+<div id="bloomberg-screen">
+  <button class="back-btn" onclick="exitMode()">← Back</button>
+  <div class="term">
+    <div class="t-top"><span class="t-title-t">CWA Terminal — KNUST</span><span class="t-stat-t">LIVE <span>●</span></span></div>
+    <div class="t-disp">
+      <div class="t-dlbl">Projected CWA</div>
+      <div class="t-dval" id="t-val">-.--</div>
+      <div class="t-dgr" id="t-gr">ENTER SCORES TO CALCULATE</div>
+    </div>
+    <div class="t-grid-t" id="t-grid"></div>
+    <div class="t-bot">
+      <div class="t-stats-t">
+        <div class="t-st">CREDITS <span id="t-cr">—</span></div>
+        <div class="t-st">COURSES <span id="t-cs">—</span></div>
+        <div class="t-st">W.TOTAL <span id="t-wt">0.0</span></div>
+      </div>
+      <button class="t-clr" onclick="resetTerminal()">CLR ALL</button>
+    </div>
+    <div class="ticker-w"><div class="ticker" id="ticker">LOADING...</div></div>
+  </div>
+</div>
+
+<!-- 2ND SEM POPUP -->
+<div id="sem2-popup" style="display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="width:100%;max-width:440px;background:rgba(8,8,6,0.98);border:1px solid rgba(255,255,255,0.1);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,0.8);position:relative">
+    <!-- Cyan top bar -->
+    <div style="height:2px;background:linear-gradient(to right,rgba(0,212,255,0.2),#00d4ff,rgba(0,212,255,0.2))"></div>
+    <div style="padding:2.25rem">
+
+      <!-- Eyebrow -->
+      <p style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#00d4ff;margin-bottom:1.25rem">KNUST BME1 · Class of 2029</p>
+
+      <!-- Title -->
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(22px,5vw,30px);font-weight:300;color:#f0ede4;line-height:1.15;margin-bottom:.75rem">
+        Congratulations on completing your<br>
+        <em style="font-style:italic;color:#00d4ff">1st Semester</em>
+      </h2>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(240,237,228,0.4);line-height:1.9;letter-spacing:.03em;margin-bottom:1.5rem">
+        You made it through. Every lecture, every late night, every exam. That took real commitment.
+      </p>
+
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:1.5rem"></div>
+
+      <!-- What's next -->
+      <p style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:.875rem">What's next</p>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(240,237,228,0.4);line-height:1.9;letter-spacing:.03em;margin-bottom:1.25rem">
+        The BME1 Portal is already being prepared for Semester 2 — new timetable, updated survival kit, and everything you need.
+      </p>
+
+      <!-- Portal link -->
+      <a href="https://knust-bme1.vercel.app" target="_blank" rel="noopener noreferrer"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);text-decoration:none;margin-bottom:10px;transition:background .2s"
+        onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+        <div>
+          <p style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:#f0ede4;letter-spacing:.06em;margin-bottom:3px">KNUST BME1 Student Portal</p>
+          <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:.04em">Timetable · Attendance · AI assistant · Orion</p>
+        </div>
+        <span style="color:rgba(255,255,255,0.25);font-size:18px;margin-left:12px">→</span>
+      </a>
+
+      <!-- Feedback link -->
+      <a href="https://forms.gle/3u5F82nnwHDqCdRQA" target="_blank" rel="noopener noreferrer"
+        style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);text-decoration:none;margin-bottom:1.5rem;transition:background .2s"
+        onmouseover="this.style.background='rgba(0,212,255,0.1)'"
+        onmouseout="this.style.background='rgba(0,212,255,0.05)'">
+        <div>
+          <p style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:#00d4ff;letter-spacing:.06em;margin-bottom:3px">Share your feedback</p>
+          <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(0,212,255,0.5);letter-spacing:.04em">Help us make Semester 2 even better</p>
+        </div>
+        <span style="color:rgba(0,212,255,0.4);font-size:18px;margin-left:12px">→</span>
+      </a>
+
+      <!-- Dismiss button -->
+      <button onclick="closeSem2Popup()"
+        style="width:100%;padding:13px 0;background:#00d4ff;color:#060a14;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-bottom:8px"
+        onmouseover="this.style.background='rgba(0,212,255,0.8)'"
+        onmouseout="this.style.background='#00d4ff'">
+        Let's go — Semester 2
+      </button>
+      <button onclick="closeSem2Popup()"
+        style="width:100%;padding:8px 0;background:none;border:none;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:color .2s"
+        onmouseover="this.style.color='rgba(255,255,255,0.45)'"
+        onmouseout="this.style.color='rgba(255,255,255,0.2)'">
+        Dismiss
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- 2nd Semester accessible via Guide dropdown -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const BASE = [
+  {code:'MATH 151',name:'Algebra',credits:4},
+  {code:'BME 161',name:'Cell Biology',credits:3},
+  {code:'EE 151',name:'Applied Electricity',credits:3},
+  {code:'ME 161',name:'Basic Mechanics',credits:3},
+  {code:'CHEM 151',name:'General Chemistry',credits:2},
+  {code:'COE 153',name:'Engineering Technology',credits:2},
+  {code:'ENGL 157',name:'Communication Skills I',credits:2},
+];
+const AI_C = {code:'AI 150',name:'Fundamentals of Responsible AI for All',credits:2};
+
+let courses = JSON.parse(localStorage.getItem('cwa-courses')||'null') || BASE.map(c=>({...c}));
+let showGPA=false, glowShown=false, aiOn=false;
+let kbMode=false, kbIdx=null, kbVal='';
+let isDark = localStorage.getItem('cwa-theme') ? localStorage.getItem('cwa-theme')==='dark' : false;
+let viewMode = localStorage.getItem('cwa-view') || (window.innerWidth>=860?'desktop':'mobile');
+let tMin=70, tMax=100;
+
+// ── ONBOARDING ────────────────────────────────────────────────
+const OB = [
+  {icon:'01',title:'Welcome to the <em>CWA Calculator</em>',
+   body:'Built for KNUST BME1 by Asante (Asante Inc.).\n\nThis tool calculates your projected Cumulative Weighted Average using the exact KNUST formula. Everything stays on your device.'},
+  {icon:'02',title:'Your <em>Courses</em>',
+   body:'All 7 Semester 1 courses are pre-loaded with correct credit hours.\n\nYou can edit any course name, code or credits by tapping directly on it. Add or remove courses for other semesters too.'},
+  {icon:'03',title:'<em>AI 150</em> Toggle',
+   body:'AI 150 is your 8th course this semester — 2 credits.\n\nIt\'s toggleable because some students may not have it counted yet. Use the switch above the course table to include it.'},
+  {icon:'04',title:'<em>Target CWA</em> Tab',
+   body:'Tap "Target CWA" above.\n\nSelect a grade class (First Class, 2nd Upper etc.) and enter known scores — the calculator shows the score range you need in every remaining course.'},
+  {icon:'05',title:'Desktop & <em>Mobile</em> Modes',
+   body:'Use the toggle in the top-right corner to switch between Desktop (two-column layout, results always visible) and Mobile (single column, cleaner on small screens).'},
+  {icon:'06',title:'<em>Interactive Mode</em>',
+   body:'Once you start entering scores, a glowing button appears bottom-right.\n\nSwitch to iPhone 15 Pro mode (Dynamic Island!) or Bloomberg Terminal mode. Same calculation, very different experience.'},
+  {icon:'07',title:'You\'re <em>ready</em>',
+   body:'Enter your scores and watch your CWA update live.\n\nFirst Class is ≥70.\nSecond Class Upper is 60–69.99.\nSecond Class Lower is 50–59.99.\n\nYou\'ve got this.'},
+];
+let obStep=0;
+
+function showOnboard(){const ov=document.getElementById('ob-ov');ov.style.display='flex';ov.classList.add('visible');renderOb(true);}
+function renderOb(instant){
+  const s=OB[obStep];const total=OB.length;
+  document.getElementById('ob-prog').style.width=((obStep+1)/total*100)+'%';
+  document.getElementById('ob-dots').innerHTML=OB.map((_,i)=>`<div class="ob-dot${i===obStep?' on':''}" onclick="obGoTo(${i})" style="cursor:pointer"></div>`).join('');
+  document.getElementById('ob-step-label').textContent=`Step ${obStep+1} of ${total}`;
+  // Back button visibility
+  const backBtn=document.getElementById('ob-back-btn');
+  if(backBtn)backBtn.classList.toggle('hidden',obStep===0);
+  const cont=document.getElementById('ob-content');
+  const delay=instant?0:180;
+  if(!instant){cont.style.transition='none';cont.style.opacity='0';cont.style.transform='translateY(6px)';}
+  setTimeout(()=>{
+    document.getElementById('ob-icon').textContent=s.icon;
+    document.getElementById('ob-title').innerHTML=s.title;
+    document.getElementById('ob-body').textContent=s.body.replace(/\\n/g,'\n');
+    document.getElementById('ob-next-label').textContent=obStep===OB.length-1?"Let's go ✓":"Continue →";
+    const wrap=document.getElementById('ob-icon-wrap');
+    wrap.style.animation='none';void wrap.offsetWidth;
+    wrap.style.animation='ob-icon-in .5s cubic-bezier(.34,1.56,.64,1)';
+    cont.style.transition='opacity .35s ease,transform .35s ease';
+    cont.style.opacity='1';cont.style.transform='translateY(0)';
+  },delay);
+}
+function obNext(){
+  if(obStep<OB.length-1){obStep++;renderOb(false);}else{obSkip();}
+}
+function obBack(){
+  if(obStep>0){obStep--;renderOb(false);}
+}
+function obGoTo(i){
+  if(i===obStep)return;
+  obStep=i;renderOb(false);
+}
+function obSkip(){
+  const ov=document.getElementById('ob-ov');
+  ov.style.transition='opacity .4s ease';ov.style.opacity='0';
+  setTimeout(()=>{ov.style.display='none';ov.classList.remove('visible');
+    ov.style.opacity='1';ov.style.transition='';
+    maybeShowSem2();
+  },400);
+}
+function startOnboard(){obStep=0;showOnboard();}
+
+// ── THEME ─────────────────────────────────────────────────────
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
+  const b=document.getElementById('theme-btn');
+  if(b)b.textContent=isDark?'☀️':'🌙';
+  localStorage.setItem('cwa-theme',isDark?'dark':'light');
+}
+function toggleTheme(){isDark=!isDark;applyTheme();}
+
+// ── VIEW ──────────────────────────────────────────────────────
+function setView(v){
+  viewMode=v;
+  document.body.classList.remove('desktop-mode','mobile-mode');
+  document.body.classList.add(v+'-mode');
+  const dt=document.getElementById('vt-dt');
+  const mb=document.getElementById('vt-mb');
+  if(dt)dt.classList.toggle('on',v==='desktop');
+  if(mb)mb.classList.toggle('on',v==='mobile');
+  localStorage.setItem('cwa-view',v);
+  showToast(v==='desktop'?'Desktop layout — results panel on the right':'Mobile layout — single column');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg,ms=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+// ── GRADE ─────────────────────────────────────────────────────
+function grade(c){
+  if(c>=70)return{l:'First Class',bg:'rgba(39,174,96,.1)',col:'#27ae60',br:'rgba(39,174,96,.25)',gpa:4.0,tc:'#40d040'};
+  if(c>=60)return{l:'Second Class Upper',bg:'rgba(41,128,185,.1)',col:'#2980b9',br:'rgba(41,128,185,.25)',gpa:3.5,tc:'#40a0d0'};
+  if(c>=50)return{l:'Second Class Lower',bg:'rgba(184,147,42,.1)',col:'#d4aa4a',br:'rgba(184,147,42,.3)',gpa:3.0,tc:'#e8a020'};
+  return{l:'Below Pass',bg:'rgba(192,57,43,.1)',col:'#c0392b',br:'rgba(192,57,43,.25)',gpa:0.0,tc:'#d04040'};
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function enterApp(){
+  const n=document.getElementById('name-input').value.trim();
+  if(!n){document.getElementById('name-input').style.borderBottomColor='#c0392b';document.getElementById('name-input').focus();return;}
+  document.getElementById('display-name').textContent=n;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('bottom-controls').style.display='flex';
+  document.getElementById('theme-btn').style.display='';
+  buildTable();buildKbGrid();
+  setTimeout(showOnboard, 600); // Always show guide on login — sem2 popup triggers after guide closes
+}
+document.getElementById('name-input').addEventListener('keydown',function(e){
+  if(e.key==='Enter')enterApp();
+  this.style.borderBottomColor='';
+});
+function confirmLogout(){
+  if(confirm('Log out? Scores will be cleared.')){
+    document.getElementById('app-screen').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('bottom-controls').style.display='none';
+    sem2ShownThisSession = false;
+    document.getElementById('theme-btn').style.display='none';
+    document.getElementById('glow-tab').style.display='none';
+    glowShown=false;
+  }
+}
+
+// ── AI ────────────────────────────────────────────────────────
+function toggleAI(){
+  aiOn=document.getElementById('ai-toggle').checked;
+  buildTable();calculate();
+  showToast(aiOn?'AI 150 included (2 credits added)':'AI 150 excluded');
+}
+function active(){return aiOn?[...courses,AI_C]:courses;}
+
+// ── TABLE ─────────────────────────────────────────────────────
+function buildTable(){
+  const ct=document.getElementById('course-table');ct.innerHTML='';
+  active().forEach((c,i)=>{
+    const isAI=c.code==='AI 150';
+    const r=document.createElement('div');r.className='course-row';
+    r.innerHTML=`
+      <div>
+        <input class="c-code" value="${c.code}" ${isAI?'readonly':''} oninput="if(!${isAI})courses[${i}].code=this.value;calculate()"/>
+        <input class="c-name" value="${c.name}" ${isAI?'readonly':''} oninput="if(!${isAI})courses[${i}].name=this.value"/>
+      </div>
+      <input type="number" class="c-cr" value="${c.credits}" min="1" max="12" ${isAI?'readonly':''} oninput="if(!${isAI}){courses[${i}].credits=parseInt(this.value)||1;calculate()}"/>
+      <input type="number" class="c-score" id="s${i}" min="0" max="100" placeholder="—"
+        oninput="onScore(this,${i})" onblur="valScore(this)"
+        onkeydown="onScoreKey(event,${i})"/>
+      <button class="del-btn" onclick="delCourse(${i},${isAI})">×</button>`;
+    ct.appendChild(r);
+  });
+}
+
+function addCourse(){
+  courses.push({code:'NEW '+(courses.length+1),name:'Course name',credits:3});
+  buildTable();calculate();
+  const ins=document.querySelectorAll('.c-code');
+  ins[ins.length-1].focus();ins[ins.length-1].select();
+}
+
+function delCourse(i,isAI){
+  if(isAI){showToast('Toggle the AI 150 switch off to remove it');return;}
+  if(courses.length<=1){showToast('Cannot remove the last course');return;}
+  courses.splice(i,1);buildTable();calculate();
+}
+
+function onScore(el,i){
+  const v=parseFloat(el.value);
+  if(!isNaN(v)&&v>100){el.value=100;showToast('Score capped at 100 — maximum possible');}
+  if(!glowShown&&el.value!==''){document.getElementById('glow-tab').style.display='block';glowShown=true;}
+  calculate();
+}
+
+function valScore(el){
+  let v=parseFloat(el.value);if(isNaN(v))return;
+  if(v<0){el.value=0;showToast('Score cannot be below 0');}
+  if(v>100){el.value=100;showToast('Score capped at 100 — maximum possible');}
+  calculate();
+}
+
+function onScoreKey(e,i){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const a=active();
+    const next=i+1;
+    if(next<a.length){const nx=document.getElementById('s'+next);if(nx){nx.focus();nx.select();}}
+  }
+}
+
+function resetScores(){document.querySelectorAll('.c-score').forEach(e=>e.value='');calculate();}
+
+function saveConfig(){
+  localStorage.setItem('cwa-courses',JSON.stringify(courses));
+  const b=document.querySelector('[onclick="saveConfig()"]');
+  const o=b.textContent;b.textContent='Saved ✓';
+  showToast('Course setup saved');
+  setTimeout(()=>b.textContent=o,2000);
+}
+
+// ── CALCULATE ─────────────────────────────────────────────────
+function getEntries(){
+  return active().map((c,i)=>{
+    const el=document.getElementById('s'+i);
+    const v=el?parseFloat(el.value):NaN;
+    return(!isNaN(v)&&v>=0&&v<=100)?{c,v}:null;
+  }).filter(Boolean);
+}
+
+function calcCWA(entries){
+  if(!entries.length)return null;
+  const ws=entries.reduce((s,e)=>s+e.v*e.c.credits,0);
+  const uc=entries.reduce((s,e)=>s+e.c.credits,0);
+  const tc=active().reduce((s,c)=>s+c.credits,0);
+  return{cwa:ws/uc,uc,tc,ws,n:entries.length};
+}
+
+function calculate(){
+  const entries=getEntries();const res=calcCWA(entries);
+  const cwaEl=document.getElementById('cwa-display');
+  const badgeEl=document.getElementById('grade-badge');
+  const fillEl=document.getElementById('prog-fill');
+  const statsEl=document.getElementById('stats-grid');
+  const bdEl=document.getElementById('bd-section');
+  const expBtn=document.getElementById('exp-btn');
+  const gpaLine=document.getElementById('gpa-line');
+  if(!res){
+    cwaEl.textContent='—';cwaEl.classList.remove('gold');
+    badgeEl.style.display='none';gpaLine.style.display='none';
+    fillEl.style.width='0%';statsEl.style.display='none';
+    bdEl.style.display='none';expBtn.style.display='none';
+    calcTarget();return;
+  }
+  const{cwa,uc,tc,ws,n}=res;const g=grade(cwa);
+  cwaEl.textContent=showGPA?g.gpa.toFixed(1):cwa.toFixed(2);
+  cwaEl.classList.toggle('gold',cwa>=70);
+  document.getElementById('scale-label').textContent=showGPA?'Projected GPA (4.0)':'Projected CWA';
+  badgeEl.textContent=g.l;badgeEl.style.cssText=`display:inline-block;background:${g.bg};color:${g.col};border:1px solid ${g.br}`;
+  gpaLine.style.display=showGPA?'block':'none';
+  if(showGPA)gpaLine.textContent=`CWA: ${cwa.toFixed(2)} / 100`;
+  fillEl.style.width=Math.min(cwa,100)+'%';
+  const miss=tc-uc;
+  statsEl.style.display='grid';
+  statsEl.innerHTML=`
+    <div class="stat-box"><div class="stat-val">${uc}<span style="font-size:13px;color:var(--ink-3)">/${tc}</span></div><div class="stat-lbl">Credits entered</div></div>
+    <div class="stat-box"><div class="stat-val">${n}<span style="font-size:13px;color:var(--ink-3)">/${active().length}</span></div><div class="stat-lbl">Courses entered</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:${miss>0?'var(--gold-l)':'#27ae60'}">${miss}</div><div class="stat-lbl">Credits missing</div></div>
+    <div class="stat-box"><div class="stat-val">${ws.toFixed(1)}</div><div class="stat-lbl">Weighted total</div></div>`;
+  bdEl.style.display='block';
+  document.getElementById('bd-rows').innerHTML=entries.map(e=>`
+    <div class="bd-row">
+      <span class="bd-course">${e.c.code}</span>
+      <div class="bd-bar"><div class="bd-bar-fill" style="width:${e.v}%"></div></div>
+      <span class="bd-score">${e.v.toFixed(0)}</span>
+    </div>`).join('');
+  expBtn.style.display='block';
+  calcTarget();
+}
+
+// ── TARGET ────────────────────────────────────────────────────
+function selectPreset(btn,min,max){
+  document.querySelectorAll('.gp-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(min===null){tMin=null;tMax=null;document.getElementById('target-input').value='';}
+  else{tMin=min;tMax=max;document.getElementById('target-input').value=min;}
+  calcTarget();
+}
+
+function calcTarget(){
+  const tEl=document.getElementById('target-input');
+  const rEl=document.getElementById('target-result');
+  const barEl=document.getElementById('range-bar-wrap');
+  if(!tEl||!rEl)return;
+  const target=parseFloat(tEl.value);
+  if(isNaN(target)||target<0||target>100){
+    if(rEl)rEl.innerHTML='';if(barEl)barEl.style.display='none';return;
+  }
+  const isRange=tMax&&tMax<100;
+  const useMax=isRange?tMax:100;
+  // Range bar
+  if(barEl&&isRange){
+    barEl.style.display='block';
+    const fillW=((useMax-target)/100)*100;
+    const fillL=(target/100)*100;
+    barEl.innerHTML=`<div class="range-bar-wrap">
+      <p class="range-bar-label">Score range for selected grade class</p>
+      <div class="range-bar-track">
+        <div class="range-bar-fill" style="left:${fillL}%;width:${fillW}%"></div>
+      </div>
+      <div class="range-bar-labels">
+        <span>0</span>
+        <span style="position:absolute;left:${fillL}%;color:var(--gold)">${target.toFixed(0)}</span>
+        <span style="position:absolute;left:${Math.min(fillL+fillW,95)}%;color:var(--gold)">${useMax===100?'100':useMax.toFixed(0)}</span>
+        <span>100</span>
+      </div>
+    </div>`;
+  } else if(barEl){barEl.style.display='none';}
+
+  const entries=getEntries();
+  const entered=entries.map(e=>e.c.code);
+  const miss=active().filter(c=>!entered.includes(c.code));
+
+  if(!miss.length){
+    const res=calcCWA(entries);const ok=res&&res.cwa>=target;const inR=res&&res.cwa>=target&&res.cwa<=useMax;
+    rEl.innerHTML=`<div class="target-result"><p class="tr-title">All courses entered</p>
+      <p style="font-size:12px;color:${inR?'#27ae60':'#c0392b'};letter-spacing:.06em">
+        ${inR?'✓ In target range — CWA: '+(res?res.cwa.toFixed(2):'—'):'✗ Outside range — CWA: '+(res?res.cwa.toFixed(2):'—')}
+      </p></div>`;
+    return;
+  }
+
+  const ws=entries.reduce((s,e)=>s+e.v*e.c.credits,0);
+  const uc=entries.reduce((s,e)=>s+e.c.credits,0);
+  const mc=miss.reduce((s,c)=>s+c.credits,0);
+  const tc=uc+mc;
+  const nMin=(target*tc-ws)/mc;
+  const nMax=isRange?(useMax*tc-ws)/mc:100;
+
+  rEl.innerHTML=`<div class="target-result">
+    <p class="tr-title">Score range needed — ${miss.length} remaining course${miss.length>1?'s':''}</p>
+    ${miss.map(c=>{
+      const perMin=(target*tc-ws)/mc;
+      const perMax=isRange?(useMax*tc-ws)/mc:100;
+      const cls=perMin>100?'bad':perMin<=0?'done':'ok';
+      const minStr=perMin>100?'Impossible':perMin<=0?'Any':Math.ceil(perMin)+'';
+      const maxStr=perMax>=100?'100':Math.floor(perMax)+'';
+      const display=perMin>100?'Impossible':perMin<=0?'Any score':(isRange?`${minStr} – ${maxStr}`:minStr+'+');
+      return`<div class="tr-row">
+        <div>
+          <div class="tr-course">${c.code} <span style="color:var(--ink-4);font-size:10px">${c.credits}cr</span></div>
+          ${isRange&&perMin<=100&&perMin>0?`<div class="tr-range">Need between ${minStr} and ${maxStr} out of 100</div>`:''}
+        </div>
+        <span class="tr-score ${cls}">${display}</span>
+      </div>`;
+    }).join('')}
+    <p style="font-size:10px;color:var(--ink-4);margin-top:12px;letter-spacing:.04em">
+      ${isRange?'Range shown for selected grade class. Assumes equal performance across remaining courses.':'Assumes equal scores across remaining courses.'}
+    </p>
+  </div>`;
+}
+
+// ── GPA ───────────────────────────────────────────────────────
+function toggleGPA(){
+  showGPA=!showGPA;
+  calculate();
+  updateGpaItem();
+  showToast(showGPA?'Showing GPA (4.0 scale)':'Showing CWA (/100)');
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(t){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('on',['calc','target'][i]===t));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('on',['tab-calc','tab-target'][i]==='tab-'+t));
+  if(t==='target')calcTarget();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportResults(){
+  const name=document.getElementById('display-name').textContent;
+  const entries=getEntries();const res=calcCWA(entries);if(!res)return;
+  const g=grade(res.cwa);
+  let txt=`CWA RESULT — ${name}\n${'─'.repeat(44)}\n`;
+  txt+=`Projected CWA:  ${res.cwa.toFixed(2)} / 100\nGrade Class:    ${g.l}\nGPA (4.0):      ${g.gpa.toFixed(1)}\n`;
+  txt+=`Credits used:   ${res.uc} / ${res.tc}\nAI 150:         ${aiOn?'Included':'Excluded'}\n${'─'.repeat(44)}\n`;
+  entries.forEach(e=>txt+=`${e.c.code.padEnd(12)} ${String(e.v.toFixed(0)).padStart(3)} / 100   (${e.c.credits}cr)\n`);
+  txt+=`${'─'.repeat(44)}\nGenerated: ${new Date().toLocaleString()}\nBuilt by: Asante Inc. — Asante\nDisclaimer: Estimation only. Not official. Consult KNUST UITS.\n`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download=`CWA-${name.replace(/ /g,'-')}.txt`;a.click();URL.revokeObjectURL(a.href);
+  showToast('Results exported');
+}
+
+// ── INTERACTIVE MODE ──────────────────────────────────────────
+function showMode(){document.getElementById('mode-ov').classList.add('on');}
+function hideMode(){document.getElementById('mode-ov').classList.remove('on');}
+function enterMode(m){
+  hideMode();
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('bottom-controls').style.display='none';
+  document.getElementById('theme-btn').style.display='none';
+  document.getElementById('glow-tab').style.display='none';
+  if(m==='iphone'){document.getElementById('iphone-screen').classList.add('on');initIphone();}
+  else{document.getElementById('bloomberg-screen').classList.add('on');initBloomberg();}
+}
+function exitMode(){
+  ['iphone-screen','bloomberg-screen'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('bottom-controls').style.display='flex';
+  document.getElementById('theme-btn').style.display='';
+  document.getElementById('glow-tab').style.display='block';
+}
+
+// ── IPHONE ────────────────────────────────────────────────────
+function initIphone(){
+  setInterval(()=>{const el=document.getElementById('i-time');if(el){const n=new Date();el.textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}},1000);
+  const ct=document.getElementById('i-courses');ct.innerHTML='';
+  active().forEach((c,i)=>{
+    const r=document.createElement('div');r.className='i-row';
+    r.innerHTML=`<div class="i-info"><div class="i-code">${c.code}</div><div class="i-name">${c.name}</div></div>
+      <div class="i-cr">${c.credits}cr</div>
+      <input type="number" class="i-inp" id="ii${i}" min="0" max="100" placeholder="—"
+        oninput="iScore(this);iCalc()" onfocus="iFocus(${i},this)"
+        onkeydown="iKey(event,${i})"/>`;
+    ct.appendChild(r);
+  });
+}
+function iScore(el){if(parseFloat(el.value)>100){el.value=100;showToast('Score capped at 100');}}
+function iFocus(i,el){
+  if(!kbMode)return;
+  kbIdx=i;kbVal=el.value||'';
+  document.getElementById('kb-lbl').textContent=active()[i].code;
+  document.getElementById('kb-disp').textContent=kbVal||'—';
+  document.getElementById('kb-ov').classList.add('vis');
+  el.blur();
+}
+function iKey(e,i){
+  if(e.key==='Enter'){e.preventDefault();const a=active();const nx=i+1;if(nx<a.length){const ne=document.getElementById('ii'+nx);if(ne){ne.focus();ne.select();}}}
+}
+function iCalc(){
+  const entries=active().map((c,i)=>{const el=document.getElementById('ii'+i);const v=el?parseFloat(el.value):NaN;return(!isNaN(v)&&v>=0&&v<=100)?{c,v}:null;}).filter(Boolean);
+  const res=calcCWA(entries);
+  const cwaEl=document.getElementById('i-cwa');const grEl=document.getElementById('i-gr-t');
+  const crEl=document.getElementById('i-cr-t');const island=document.getElementById('di');
+  if(!res){cwaEl.textContent='—';cwaEl.classList.remove('g');grEl.textContent='Enter scores above';island.classList.remove('exp');return;}
+  const g=grade(res.cwa);
+  cwaEl.textContent=res.cwa.toFixed(2);cwaEl.classList.toggle('g',res.cwa>=70);
+  grEl.textContent=g.l;grEl.style.color=g.col;
+  crEl.textContent=`${res.uc} / ${res.tc} credits`;
+  document.getElementById('di-val').textContent=res.cwa.toFixed(2);
+  document.getElementById('di-gr').textContent=g.l;document.getElementById('di-gr').style.color=g.col;
+  island.classList.add('exp');setTimeout(()=>island.classList.remove('exp'),3000);
+}
+function toggleKb(){
+  kbMode=!kbMode;const btn=document.getElementById('kb-tog');
+  btn.textContent=kbMode?'Type':'Keypad';btn.style.borderColor=kbMode?'#d4aa4a':'';
+  if(!kbMode){document.getElementById('kb-ov').classList.remove('vis');kbIdx=null;}
+}
+function buildKbGrid(){
+  const g=document.getElementById('kb-grid');if(!g)return;g.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','CLR','0','OK'].forEach(k=>{
+    const b=document.createElement('button');
+    b.className='kb-k'+(k==='OK'?' act':k==='CLR'?' del':'');
+    b.textContent=k;b.onclick=()=>kbPress(k);g.appendChild(b);
+  });
+}
+function kbPress(k){
+  if(kbIdx===null)return;
+  if(k==='CLR'){kbVal='';}
+  else if(k==='OK'){
+    const v=parseFloat(kbVal);const el=document.getElementById('ii'+kbIdx);
+    if(!isNaN(v)&&v>=0&&v<=100&&el){el.value=v;iCalc();}
+    document.getElementById('kb-ov').classList.remove('vis');kbIdx=null;kbVal='';return;
+  }else{
+    if(kbVal.length>=3)return;kbVal+=k;
+    if(parseFloat(kbVal)>100){kbVal='100';showToast('Score capped at 100');}
+  }
+  document.getElementById('kb-disp').textContent=kbVal||'—';
+}
+
+// ── BLOOMBERG ─────────────────────────────────────────────────
+function initBloomberg(){
+  const g=document.getElementById('t-grid');g.innerHTML='';
+  active().forEach((c,i)=>{
+    const cell=document.createElement('div');cell.className='t-row-t';
+    cell.innerHTML=`<span class="t-code-t">${c.code}</span><span class="t-cr-t">${c.credits}</span>
+      <input type="number" class="t-inp-t" id="ti${i}" min="0" max="100" placeholder="-.--"
+        oninput="tScore(this);tCalc()"/>`;
+    g.appendChild(cell);
+  });
+  document.getElementById('ticker').innerHTML=active().map(c=>`${c.code}<span>${c.credits}CR</span>`).join(' · ')+
+    ' · FIRST CLASS<span>≥70</span> · 2ND UPPER<span>60-69</span> · 2ND LOWER<span>50-59</span> · KNUST UITS ·';
+}
+function tScore(el){if(parseFloat(el.value)>100){el.value=100;showToast('Score capped at 100');}}
+function tCalc(){
+  const entries=active().map((c,i)=>{const el=document.getElementById('ti'+i);const v=el?parseFloat(el.value):NaN;return(!isNaN(v)&&v>=0&&v<=100)?{c,v}:null;}).filter(Boolean);
+  const res=calcCWA(entries);
+  const vEl=document.getElementById('t-val');const gEl=document.getElementById('t-gr');
+  if(!res){vEl.textContent='-.--';vEl.style.color='#e8a020';gEl.innerHTML='ENTER SCORES TO CALCULATE';return;}
+  const g=grade(res.cwa);
+  vEl.textContent=res.cwa.toFixed(2);vEl.style.color=g.tc;
+  gEl.innerHTML=`CLASS: <span style="color:${g.col}">${g.l.toUpperCase()}</span>`;
+  document.getElementById('t-cr').textContent=`${res.uc}/${res.tc}`;
+  document.getElementById('t-cs').textContent=`${res.n}/${active().length}`;
+  document.getElementById('t-wt').textContent=res.ws.toFixed(1);
+}
+function resetTerminal(){active().forEach((_,i)=>{const el=document.getElementById('ti'+i);if(el)el.value='';});tCalc();}
+
+// ── SEM2 POPUP ─────────────────────────────────────────────────
+let sem2ShownThisSession = false;
+
+function openSem2Popup(){
+  const el = document.getElementById('sem2-popup');
+  el.style.display = 'flex';
+  // Fade in
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .35s ease';
+  setTimeout(() => el.style.opacity = '1', 10);
+}
+
+function closeSem2Popup(){
+  const el = document.getElementById('sem2-popup');
+  el.style.transition = 'opacity .3s ease';
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.display = 'none'; el.style.opacity = '1'; }, 320);
+}
+
+function maybeShowSem2(){
+  if (sem2ShownThisSession) return;
+  sem2ShownThisSession = true;
+  setTimeout(openSem2Popup, 1200); // slight delay after guide
+}
+
+
+// ── GUIDE DROPDOWN ───────────────────────────────────────────
+function toggleGuideDd(){
+  const p = document.getElementById('guide-dd-panel');
+  const isOpen = p.classList.contains('open');
+  if(isOpen){ closeGuideDd(); }
+  else {
+    p.classList.add('open');
+    setTimeout(() => document.addEventListener('click', closeGuideDdOutside), 0);
+  }
+}
+function closeGuideDd(){
+  const p = document.getElementById('guide-dd-panel');
+  if(p) p.classList.remove('open');
+  document.removeEventListener('click', closeGuideDdOutside);
+}
+function closeGuideDdOutside(e){
+  const dd = document.getElementById('guide-dd');
+  if(dd && !dd.contains(e.target)) closeGuideDd();
+}
+function updateGpaItem(){
+  const badge = document.getElementById('gpa-dd-badge');
+  const item  = document.getElementById('gpa-dd-item');
+  if(badge){ badge.textContent = showGPA ? 'On' : 'Off'; badge.classList.toggle('active', showGPA); }
+  if(item)  item.classList.toggle('active', showGPA);
+}
+
+
+// ── CHALKBOARD ───────────────────────────────────────────────
+const CHALK_SECTIONS = ['chalk-section-1','chalk-section-2','chalk-section-3','chalk-section-4','chalk-section-5'];
+
+function openChalk(){
+  const s = document.getElementById('chalk-screen');
+  s.classList.add('on');
+  s.scrollTop = 0;
+  // Animate grade bars after a beat
+  setTimeout(animateGradeBars, 600);
+  // Set first dot active
+  updateChalkDots(0);
+  // Track scroll to update dots
+  s.addEventListener('scroll', onChalkScroll);
+}
+
+function closeChalk(){
+  const s = document.getElementById('chalk-screen');
+  s.classList.remove('on');
+  s.removeEventListener('scroll', onChalkScroll);
+}
+
+function animateGradeBars(){
+  const bars = [
+    {id:'gb-1', pct: 100},
+    {id:'gb-2', pct: 71.4},
+    {id:'gb-3', pct: 42.8},
+    {id:'gb-4', pct: 14.3},
+  ];
+  bars.forEach(b => {
+    const el = document.getElementById(b.id);
+    if(el) el.style.width = b.pct + '%';
+  });
+}
+
+function chalkScrollTo(idx){
+  const screen = document.getElementById('chalk-screen');
+  const sections = screen.querySelectorAll('.chalk-section');
+  if(sections[idx]){
+    sections[idx].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  updateChalkDots(idx);
+}
+
+function updateChalkDots(activeIdx){
+  const dots = document.querySelectorAll('.chalk-nav-dot');
+  dots.forEach((d, i) => d.classList.toggle('on', i === activeIdx));
+}
+
+function onChalkScroll(){
+  const screen = document.getElementById('chalk-screen');
+  const sections = screen.querySelectorAll('.chalk-section');
+  const scrollMid = screen.scrollTop + screen.clientHeight / 2;
+  let active = 0;
+  sections.forEach((s, i) => {
+    if(s.offsetTop <= scrollMid) active = i;
+  });
+  updateChalkDots(active);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+applyTheme();
+setView(viewMode);
+</script>
+<!-- ═══════════════════════════════════════════
+     CHALKBOARD / ABOUT SCREEN
+═══════════════════════════════════════════ -->
+<div id="chalk-screen">
+  <button class="chalk-back" onclick="closeChalk()">← Back</button>
+
+  <div class="chalk-inner">
+
+    <!-- HERO -->
+    <p class="chalk-chapter">Asante Inc. · 2026 · KNUST BME1</p>
+    <h1 class="chalk-h1">What is a <em>CWA</em>?</h1>
+    <p class="chalk-sub">— and why should you care</p>
+
+    <!-- SECTION 1: What is CWA -->
+    <div class="chalk-section">
+      <h2 class="chalk-sh">The Basics</h2>
+      <p class="chalk-p">
+        <strong>CWA</strong> stands for <em>Cumulative Weighted Average</em>. It is Ghana's primary academic performance metric — used by KNUST, UG, UCC, and most Ghanaian universities. Think of it as your academic GPA, but measured <strong>out of 100</strong> instead of 4.0.
+      </p>
+      <p class="chalk-p">
+        The <em>"weighted"</em> part is key. Not all courses count equally. A 4-credit course like <strong>MATH 151</strong> pulls your CWA four times harder than a 1-credit course. Every mark matters — but some marks matter more.
+      </p>
+
+      <div class="chalk-formula">
+        CWA = Σ(Score × Credits) ÷ Σ(Credits attempted)
+      </div>
+
+      <p class="chalk-p">
+        Example: You score <em>80 in MATH 151 (4cr)</em> and <em>60 in ENGL 157 (2cr)</em>. Your CWA is not simply (80+60)÷2 = 70. It is <strong>(80×4 + 60×2) ÷ (4+2) = (320+120)÷6 = 73.3</strong>. The heavier course has more pull.
+      </p>
+    </div>
+
+    <div class="chalk-rule"></div>
+
+    <!-- SECTION 2: Grade classes -->
+    <div class="chalk-section">
+      <h2 class="chalk-sh">Grade Classes</h2>
+      <p class="chalk-p">At the end of your four years, your overall CWA determines your degree classification. These are the thresholds at KNUST:</p>
+
+      <div class="grade-board" id="grade-board">
+        <div class="grade-row">
+          <span class="grade-num" style="color:#f5e642">≥ 70</span>
+          <span class="grade-label"><strong style="color:#fff">First Class Honours</strong> — the top tier. Rare. Respected everywhere.</span>
+          <div class="grade-bar-wrap"><div class="grade-bar" id="gb-1" style="background:#f5e642"></div></div>
+        </div>
+        <div class="grade-row">
+          <span class="grade-num" style="color:#aee6f5">60–69</span>
+          <span class="grade-label"><strong style="color:#fff">Second Class Upper</strong> — strong, competitive. Opens most doors.</span>
+          <div class="grade-bar-wrap"><div class="grade-bar" id="gb-2" style="background:#aee6f5"></div></div>
+        </div>
+        <div class="grade-row">
+          <span class="grade-num" style="color:#b4f5b4">50–59</span>
+          <span class="grade-label"><strong style="color:#fff">Second Class Lower</strong> — a pass. Some roles require Upper or above.</span>
+          <div class="grade-bar-wrap"><div class="grade-bar" id="gb-3" style="background:#b4f5b4"></div></div>
+        </div>
+        <div class="grade-row">
+          <span class="grade-num" style="color:rgba(255,255,255,.35)">&lt; 50</span>
+          <span class="grade-label" style="color:rgba(255,255,255,.4)">Below Pass — re-sit territory. Not where you want to be.</span>
+          <div class="grade-bar-wrap"><div class="grade-bar" id="gb-4" style="background:rgba(255,255,255,.25)"></div></div>
+        </div>
+      </div>
+
+      <p class="chalk-p" style="margin-top:1rem">
+        The student with the <em>highest CWA across their entire graduating class</em> becomes the <strong class="hi">Valedictorian</strong> — the one who gives the graduation speech, carries the department's honour, and has that achievement follow them for life. It is not just a GPA. It is a title.
+      </p>
+    </div>
+
+    <div class="chalk-rule"></div>
+
+    <!-- SECTION 3: CWA vs GPA -->
+    <div class="chalk-section">
+      <h2 class="chalk-sh">CWA vs GPA — What's the difference?</h2>
+      <p class="chalk-p">Both measure academic performance using course weights, but they come from different traditions and look different on paper:</p>
+
+      <div class="compare-grid">
+        <div class="compare-col">
+          <p class="compare-head" style="color:#f5e642">CWA (Ghana / UK-style)</p>
+          <p class="compare-item">Scored out of 100</p>
+          <p class="compare-item">Used across Ghanaian universities</p>
+          <p class="compare-item">First Class = ≥70</p>
+          <p class="compare-item">Reflects UK honours tradition</p>
+          <p class="compare-item">Granular — 73.5 vs 74.1 matters</p>
+        </div>
+        <div class="compare-col">
+          <p class="compare-head" style="color:#aee6f5">GPA (US-style)</p>
+          <p class="compare-item">Scored out of 4.0</p>
+          <p class="compare-item">Standard across US universities</p>
+          <p class="compare-item">Magna Cum Laude ≈ 3.7+</p>
+          <p class="compare-item">Reflects US letter-grade system</p>
+          <p class="compare-item">Compressed — 3.8 vs 3.9 is small</p>
+        </div>
+      </div>
+
+      <p class="chalk-p" style="margin-top:1rem">
+        Schools that adopt the <em>GPA system</em> (MIT, Harvard, most US institutions) find it simpler to compare across departments. Schools that use <em>CWA</em> (Oxford-influenced, Ghanaian public universities) argue the 100-point scale allows more precise differentiation — especially important when ranking students for competitive positions, scholarships, or valedictorian selection.
+      </p>
+      <p class="chalk-p">
+        Neither is superior. They are <em>different lenses</em> on the same question: how well did you understand what you were taught?
+      </p>
+    </div>
+
+    <div class="chalk-rule"></div>
+
+    <!-- SECTION 4: How the calculator works -->
+    <div class="chalk-section">
+      <h2 class="chalk-sh">How this Calculator Works</h2>
+      <p class="chalk-p">
+        It applies the exact KNUST CWA formula. Enter your score for each course, and it computes the weighted average in real time. Courses you leave blank are excluded from the calculation — so partial results are still meaningful.
+      </p>
+
+      <div class="chalk-formula">
+        Your CWA = Σ(your score × credit hours) ÷ Σ(credit hours entered)
+      </div>
+
+      <p class="chalk-p">
+        The <strong>Target CWA tab</strong> works in reverse — you set the CWA you want (say, 70 for First Class) and it tells you exactly what score you need in each remaining course to get there, given what you've already entered.
+      </p>
+      <p class="chalk-p">
+        <em>AI 150</em> is toggleable because it's a new university-wide course whose inclusion in official CWA calculations varies. Toggle it on if your department includes it; off if not.
+      </p>
+      <p class="chalk-p">
+        Nothing is stored. No server. No database. Every calculation lives entirely in your browser. Close the tab and it's gone — unless you export it.
+      </p>
+    </div>
+
+    <div class="chalk-rule"></div>
+
+    <!-- SECTION 5: Why I built this -->
+    <div class="chalk-section">
+      <h2 class="chalk-sh">Why I Built This</h2>
+
+      <div class="story-card">
+        <p class="chalk-p">
+          It was somewhere between the third week of lectures and the first round of test results that I realised most of us had no idea where we actually stood.
+        </p>
+        <p class="chalk-p">
+          We knew our scores. We didn't know what they meant in aggregate. We didn't know how a 55 in a 4-credit course was quietly dragging the whole CWA down, or how a strong performance in MATH 151 could pull everything up.
+        </p>
+      </div>
+
+      <p class="chalk-p">
+        I'm <strong>Asante</strong> — a first-year Biomedical Engineering student at KNUST, Class of 2029. I built this as a side project because I wanted something simple, fast, and honest. Something that just shows you the number. No sign-up. No ads. No tracking.
+      </p>
+      <p class="chalk-p">
+        I was also building the <a href="https://knust-bme1.vercel.app" target="_blank" rel="noopener noreferrer" style="color:#aee6f5;text-decoration:none;background-image:linear-gradient(to right,rgba(174,230,245,.6),rgba(174,230,245,.6));background-repeat:no-repeat;background-position:0 92%;background-size:100% 1px">BME1 Student Portal</a> at the same time — a full platform with timetables, attendance tracking, an AI assistant, and a live class constellation map. The CWA Calculator started as one feature inside the portal. It outgrew the portal. So I gave it its own home.
+      </p>
+      <p class="chalk-p">
+        The design took its cues from financial terminals and editorial design — because your academic record <em>is</em> financial data, in a way. It compounds. Small improvements early have outsized impact later. Treat it that way.
+      </p>
+      <p class="chalk-p" style="margin-top:2rem;color:rgba(255,255,255,.4);font-size:16px">
+        — Asante · Kumasi · 2026
+      </p>
+    </div>
+
+  </div><!-- end chalk-inner -->
+
+  <!-- Bottom nav dots -->
+  <nav class="chalk-nav" id="chalk-nav">
+    <button class="chalk-nav-dot on" onclick="chalkScrollTo(0)" title="What is CWA?"></button>
+    <button class="chalk-nav-dot" onclick="chalkScrollTo(1)" title="Grade Classes"></button>
+    <button class="chalk-nav-dot" onclick="chalkScrollTo(2)" title="CWA vs GPA"></button>
+    <button class="chalk-nav-dot" onclick="chalkScrollTo(3)" title="How it Works"></button>
+    <button class="chalk-nav-dot" onclick="chalkScrollTo(4)" title="Why I Built This"></button>
+  </nav>
+</div>
+<!-- ═══════════════════════════ end chalk-screen ═══════════════════════════ -->
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);
+  z-index:350;background:var(--surface);border:1px solid var(--border-2);
+  padding:14px 20px;box-shadow:var(--sh-lg);display:flex;align-items:center;
+  gap:14px;max-width:340px;width:calc(100vw - 2rem)">
+  <img src="cwa-calc.png" style="width:36px;height:36px;border-radius:8px;flex-shrink:0">
+  <div style="flex:1;min-width:0">
+    <p style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);letter-spacing:.06em">Install CWA Calculator</p>
+    <p style="font-family:'DM Mono',monospace;font-size:9px;color:var(--ink-3);margin-top:2px;letter-spacing:.04em">Add to your home screen</p>
+  </div>
+  <button onclick="pwaDismiss()" style="background:none;border:none;color:var(--ink-4);cursor:pointer;font-size:18px;padding:4px;flex-shrink:0">×</button>
+  <button id="pwa-install-btn" onclick="pwaInstall()"
+    style="background:var(--gold);color:#fff;border:none;
+    font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;padding:8px 14px;
+    cursor:pointer;flex-shrink:0">
+    Install
+  </button>
+</div>
+
+<script>
+// ── PWA ───────────────────────────────────────────────────────
+let pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  pwaPrompt = e;
+  // Show banner after a short delay
+  setTimeout(() => {
+    const banner = document.getElementById('pwa-banner');
+    if(banner && !localStorage.getItem('pwa-dismissed')) {
+      banner.style.display = 'flex';
+    }
+  }, 3000);
+});
+
+function pwaInstall(){
+  if(!pwaPrompt) return;
+  pwaPrompt.prompt();
+  pwaPrompt.userChoice.then(r => {
+    if(r.outcome === 'accepted') {
+      document.getElementById('pwa-banner').style.display = 'none';
+      localStorage.setItem('pwa-dismissed', '1');
+    }
+    pwaPrompt = null;
+  });
+}
+
+function pwaDismiss(){
+  document.getElementById('pwa-banner').style.display = 'none';
+  localStorage.setItem('pwa-dismissed', '1');
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-banner').style.display = 'none';
+});
+
+// Register service worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
